@@ -2,33 +2,34 @@
 module mod_upAndSum
     use mod_data
     implicit NONE
-    real convert_g2kg
+    real convert_g2kg, convert_h2s
 
     contains
     subroutine updateHourly()
         implicit none
         ! integer iTotHourly
         convert_g2kg = 0.001
+        convert_h2s  = 1/3600.
         ! carbon fluxes (KgC m-2 s-1) Jian: TECO unit is gC m-2 s-1
-        gpp_h             = gpp*convert_g2kg
-        npp_h             = npp*convert_g2kg
-        nppLeaf_h         = NPP_L*convert_g2kg
-        nppWood_h         = NPP_W*convert_g2kg  
-        nppStem_h         = NPP_W*convert_g2kg                   ! According to SPRUCE-MIP, stem means above ground woody tissues which is different from wood tissues. Jian: TECO has no above ground woody tissues, set to equit wood
-        nppRoot_h         = NPP_R*convert_g2kg
-        nppOther_h        = 0                       ! Jian: no other storage, NSC seems different from other NPP.
-        ra_h              = Rauto*convert_g2kg
-        raLeaf_h          = Rmleaf*convert_g2kg
-        raStem_h          = Rmstem*convert_g2kg
-        raRoot_h          = Rmroot*convert_g2kg
-        raOther_h         = Rnitrogen *convert_g2kg               ! Total C cost for nitrogen
-        rMaint_h          = Rmain *convert_g2kg                   ! maintenance respiration
-        rGrowth_h         = Rgrowth *convert_g2kg                 ! growth respiration
-        rh_h              = Rhetero *convert_g2kg                 ! heterotrophic respiration
-        nbp_h             = (gpp - Rhetero - Rauto) *convert_g2kg   ! NBP(net biome productivity) = GPP - Rh - Ra - other losses  
-        wetlandCH4_h      = simuCH4 *convert_g2kg                 ! wetland net fluxes of CH4
-        wetlandCH4prod_h  = Pro_sum *convert_g2kg                 ! wetland net fluxes of CH4 production
-        wetlandCH4cons_h  = Oxi_sum *convert_g2kg                 ! wetland net fluxes of CH4 consumption
+        gpp_h             = gpp*convert_g2kg*convert_h2s
+        npp_h             = npp*convert_g2kg*convert_h2s
+        nppLeaf_h         = NPP_L*convert_g2kg*convert_h2s
+        nppWood_h         = NPP_W*convert_g2kg*convert_h2s  
+        nppStem_h         = NPP_W*convert_g2kg*convert_h2s                   ! According to SPRUCE-MIP, stem means above ground woody tissues which is different from wood tissues. Jian: TECO has no above ground woody tissues, set to equit wood
+        nppRoot_h         = NPP_R*convert_g2kg*convert_h2s
+        nppOther_h        = 0*convert_g2kg*convert_h2s                       ! Jian: no other storage, NSC seems different from other NPP.
+        ra_h              = Rauto*convert_g2kg*convert_h2s
+        raLeaf_h          = Rmleaf*convert_g2kg*convert_h2s
+        raStem_h          = Rmstem*convert_g2kg*convert_h2s
+        raRoot_h          = Rmroot*convert_g2kg*convert_h2s
+        raOther_h         = Rnitrogen *convert_g2kg*convert_h2s               ! Total C cost for nitrogen
+        rMaint_h          = Rmain *convert_g2kg*convert_h2s                   ! maintenance respiration
+        rGrowth_h         = Rgrowth *convert_g2kg*convert_h2s                 ! growth respiration
+        rh_h              = Rhetero *convert_g2kg*convert_h2s                 ! heterotrophic respiration
+        nbp_h             = (gpp - Rhetero - Rauto) *convert_g2kg*convert_h2s   ! NBP(net biome productivity) = GPP - Rh - Ra - other losses  
+        wetlandCH4_h      = simuCH4 *convert_g2kg*convert_h2s                 ! wetland net fluxes of CH4
+        wetlandCH4prod_h  = Pro_sum *convert_g2kg*convert_h2s                 ! wetland net fluxes of CH4 production
+        wetlandCH4cons_h  = Oxi_sum *convert_g2kg*convert_h2s                 ! wetland net fluxes of CH4 consumption
         ! Carbon Pools  (KgC m-2)
         cLeaf_h           = QC(1)*convert_g2kg
         cStem_h           = QC(2)*convert_g2kg
@@ -43,11 +44,11 @@ module mod_upAndSum
         cSoilPassive_h    = QC(8)*convert_g2kg 
         cCH4_h            = CH4*convert_g2kg                        ! methane concentration
         ! Nitrogen fluxes (kgN m-2 s-1)
-        fBNF_h            = N_fixation*convert_g2kg                 ! fBNF: biological nitrogen fixation;
-        fN2O_h            = N_miner*convert_g2kg                    ! fN2O: loss of nitrogen through emission of N2O;
-        fNloss_h          = N_loss*convert_g2kg                     ! fNloss:Total loss of nitrogen to the atmosphere and from leaching;
-        fNnetmin_h        = fNnetmin*convert_g2kg                   ! net mineralizaiton
-        fNdep_h           = N_deposit*convert_g2kg                  ! deposition of N
+        fBNF_h            = N_fixation*convert_g2kg*convert_h2s                 ! fBNF: biological nitrogen fixation;
+        fN2O_h            = N_miner*convert_g2kg*convert_h2s                    ! fN2O: loss of nitrogen through emission of N2O;
+        fNloss_h          = N_loss*convert_g2kg*convert_h2s                     ! fNloss:Total loss of nitrogen to the atmosphere and from leaching;
+        fNnetmin_h        = fNnetmin*convert_g2kg*convert_h2s                   ! net mineralizaiton
+        fNdep_h           = N_deposit*convert_g2kg*convert_h2s                  ! deposition of N
         ! Nitrogen pools (kgN m-2)
         nLeaf_h           = QN(1)*convert_g2kg
         nStem_h           = QN(2)*convert_g2kg
@@ -63,11 +64,11 @@ module mod_upAndSum
         SWnet_h           = 0 ! Net shortwave radiation;
         LWnet_h           = 0 ! Net longwave radiation
         ! water fluxes (kg m-2 s-1)
-        ec_h              = evap*convert_g2kg        ! Canopy evaporation;
-        tran_h            = transp*convert_g2kg      ! Canopy transpiration;
+        ec_h              = evap*convert_g2kg*convert_h2s        ! Canopy evaporation;
+        tran_h            = transp*convert_g2kg*convert_h2s      ! Canopy transpiration;
         es_h              = 0 ! Soil evaporation
-        hfsbl_h           = sublim*convert_g2kg ! Snow sublimation
-        mrro_h            = runoff*convert_g2kg
+        hfsbl_h           = sublim*convert_g2kg*convert_h2s ! Snow sublimation
+        mrro_h            = runoff*convert_g2kg*convert_h2s
         mrros_h           = 0    
         mrrob_h           = 0 ! Total runoff; Surface runoff; Subsurface runoff
         ! other

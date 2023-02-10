@@ -208,23 +208,31 @@ module mod_soil
         !     stop
         ! endif
 
-        ! if (transp .gt. 0.00002 .and. transp .le. 0.000022) then
+        ! if (transp .gt. wsc(1) .and. transp .le. (wsc(1)+wsc(2))) then
         !     infilt = infilt+transp*0.4
-        ! else if (transp .gt. 0.000022) then
+        ! else if (transp .gt. (wsc(1)+wsc(2))) then
         !     ! infilt = infilt+infilt*0.0165
-        !     infilt = infilt+transp*0.8
+        !     infilt = infilt+transp*0.6
         !     ! infilt = infilt+0.22*0.4+(transp-0.22)*0.9
-        ! else
+        ! else if (transp .gt. (wsc(1)+wsc(2)+wsc(3))) then
+        !     infilt = infilt+transp*0.8
+        ! else 
         !     infilt = infilt+transp*0.001
         ! endif
 
-        ! if (evap .ge. 0.00001 .and. evap .le. 0.000015) then
+        ! if (evap .ge. wsc(1) .and. evap .le. (wsc(1)+wsc(2))) then
         !     infilt = infilt+evap*0.4
-        ! else if (evap .gt. 0.000015) then
+        ! else if (transp .gt. (wsc(1)+wsc(2))) then
+        !     infilt = infilt+evap*0.6
+        ! else if (transp .gt. (wsc(1)+wsc(2)+wsc(3))) then
         !     infilt = infilt+evap*0.8
         ! else
         !     infilt = infilt+evap*0.001
         ! endif
+
+        ! Jian: readd water according to evaporation, transpiration and soil moisture.
+        infilt = infilt + amax1(0.0,(1-omega)*transp)
+        infilt = infilt + amax1(0.0,(1-omega)*evap)
         
         do i=1,10
             wsc(i) = Amax1(0.00,(wcl(i)-WILTPT_x)*THKSL(i)*10.0)

@@ -886,29 +886,35 @@ module mod_ncd_io
         IMPLICIT NONE
         real(kind=4), Dimension(lenTime,nSoilLayer), intent(in) :: data
         integer(kind=4) :: nSoilLayer
-        integer(KIND=4) :: ncid, lT_dimid, dp_dimid
+        integer(KIND=4) :: ncid, timid, dp_dimid, timvarid
         integer(kind=4) :: varid
         integer(kind=4), intent(in) :: lenTime
         CHARACTER(LEN=*), INTENT(IN) :: outfile, freq
         CHARACTER(len=*), intent(in) :: varName, unit, description
         character(len=:), allocatable :: nc_fileName
         character(len=100) :: timeUnit
-        ! integer i
+        integer itime
+        real, dimension(lenTime) :: time_values 
+        integer :: start(1), count(1)
         
         allocate(character(len=200+len(outfile)) :: nc_fileName)
         nc_fileName = adjustl(trim(outfile))//"/"//adjustl(trim(varName))//"_"//freq//"_TECO-SPRUCE_"//&
             & adjustl(trim(experiment))//"_"//adjustl(trim(str_startyr))//"-"//adjustl(trim(str_endyr))//".nc"   
+        
         !Create the netCDF file.
         CALL check(nf90_create(nc_fileName, NF90_CLOBBER, ncid))
+
         !Define the dimensions.
-        CALL check(nf90_def_dim(ncid, "time", lenTime, lT_dimid))
+        CALL check(nf90_def_dim(ncid, "time", lenTime, timid))
+    
         if (nSoilLayer>1)then
             call check(nf90_def_dim(ncid, "depth", nSoilLayer, dp_dimid))
             CALL check(nf90_def_var(ncid = ncid, name = varName,  xtype = NF90_FLOAT, &
-                & dimids = (/lT_dimid, dp_dimid/),  varID =varid))
+                & dimids = (/timid, dp_dimid/),  varID =varid))
         else
-            CALL check(nf90_def_var(ncid, varName, NF90_FLOAT, lT_dimid, varid))
+            CALL check(nf90_def_var(ncid, varName, NF90_FLOAT, timid, varid))
         endif
+        call check(nf90_def_var(ncid, "time", NF90_DOUBLE, timid, timvarid))
         !Define data variable
         
         !Add attributes
@@ -920,18 +926,27 @@ module mod_ncd_io
             timeUnit = "months since "//adjustl(trim(str_startyr))//"-01-01 00:00:00"
         end if
         
-        call check(nf90_put_att(ncid,lT_dimid,"units",adjustl(trim(timeUnit))))
+        call check(nf90_put_att(ncid,timvarid,"units",adjustl(trim(timeUnit))))
         CALL check(nf90_put_att(ncid,varid,"units",unit))
         CALL check(nf90_put_att(ncid,varid,"description",description))
-        CALL check(nf90_enddef(ncid)) !End Definitions
+        CALL check(nf90_enddef(ncid)) 
+        !End Definitions
+
         !Write Data
         ! if (nSoilLayer>1)then
         !     do i = 1, nSoilLayer
         !         CALL check(nf90_put_var(ncid, varid, data, start=[1,i], count=[lenTime,1]))
         !     enddo
         ! else
+
+        do itime = 1, lenTime
+            time_values(itime) = itime-1
+        enddo
+        start = 1
+        count = lenTime
+        CALL check(nf90_put_var(ncid, timvarid, time_values,start,count))
         CALL check(nf90_put_var(ncid, varid, data))
-        ! endif
+        
         CALL check(nf90_close(ncid))
     end subroutine write_nc
 

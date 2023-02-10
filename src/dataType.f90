@@ -16,11 +16,11 @@ module mod_data
     integer, parameter :: dtimes     = 24                          ! hourly simulation
 
     ! define some parameters for in/out
-    character(200) :: parafile        = "input/parameters.txt"
-    character(200) :: climatefile     = "input/forcing.txt"
-    character(200) :: snowdepthfile   = "input/SPRUCE_Snow_Depth_2011-2014.txt"
-    character(len=1500) :: outdir     = "outputs"
-    character(len=1500) :: in_restart = "outputs/restart_spinup.nc"
+    character(200) :: parafile        = "../input/parameters.txt"
+    character(200) :: climatefile     = "../input/forcing.txt"
+    character(200) :: snowdepthfile   = "../input/SPRUCE_Snow_Depth_2011-2014.txt"
+    character(len=1500) :: outdir     = "../outputs"
+    character(len=1500) :: in_restart = "../outputs/restart_spinup.nc"
     character(len=50) watertablefile                               ! Jian: maybe used when not run soil_physical
     character(200) commts
     character(len=1000) :: outDir_h, outDir_d, outDir_m, outDir_csv, outFile_restart
