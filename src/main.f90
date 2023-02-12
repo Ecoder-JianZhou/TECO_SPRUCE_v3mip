@@ -22,6 +22,13 @@ program TECO
     call CreateFolder(adjustl(trim(outDir_m)))
     call CreateFolder(adjustl(trim(outDir_csv)))
 
+    if (do_spinup)then
+        outDir_sp  = adjustl(trim(outdir))//"/res_spinup_nc"
+        outFile_sp = adjustl(trim(outDir_sp))//"/results_spinup.nc"
+        call CreateFolder(adjustl(trim(outDir_sp)))
+        call init_spinup_variables()
+    endif
+
     ! write(outfile,*) adjustl(trim(outDir_csv)),"/Simu_dailyflux_23.csv"
     ! outfile       = trim(outfile)
     ! outfile       = adjustl(outfile)
@@ -45,15 +52,18 @@ program TECO
         call read_restart(in_restart)
         call initialize_with_restart()
     endif
-
+    itest = 0
     if (do_spinup) then
         call run_spinup()
+        call write_spinup_res()
+        call deallo_spinup_variables()
     endif 
     if (do_mcmc) then
         call read_obs()
         call run_mcmc()
     endif
     
+    itest = 1
     call teco_simu()
     ! writing output file...
 !     i_record = 1

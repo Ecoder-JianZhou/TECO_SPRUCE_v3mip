@@ -70,6 +70,7 @@ contains
       transp = AMAX1(Ecanop*3600.0/(1.0e6*(2.501 - 0.00236*Tair)), 0.) ! mm H2O /hour
       evap   = AMAX1(Esoil *3600.0/(1.0e6*(2.501 - 0.00236*Tair)), 0.)
       ! write(*,*)"test_new_evap: ", Esoil, Tair
+      write(*,*)"GPP: ", Acan1, Acan2
       return
    end subroutine canopy
 
@@ -429,7 +430,7 @@ contains
          Tleaf1    = Tleaf1 + fslt*Tleaf(1)*Gaussw(ng)*FLAIT
          Tleaf2    = Tleaf2 + fshd*Tleaf(2)*Gaussw(ng)*FLAIT
          ! if (itest .eq.  853) then
-         ! write(*,*)"test Acan1:", Vcmxx, Tlk, -0.0089*Vcmxx*exp(0.069*(Tlk - 293.2)), Tair
+         write(*,*)"test Acan1:", Vcmxx, Tlk, -0.0089*Vcmxx*exp(0.069*(Tlk - 293.2)), Tair
          ! write(*,*)"test Teaf1: ",gpp, Acan1, Acan2, fshd, fslt, Aleaf, Gaussw(ng), flait, stom_n
          ! endif
       end do  ! 5 layers

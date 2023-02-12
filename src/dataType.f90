@@ -1,7 +1,7 @@
 module mod_data
     implicit none
     ! run settings 
-    logical, parameter :: do_spinup  = .False.                     ! run spinup or not
+    logical, parameter :: do_spinup  = .True.                     ! run spinup or not
     logical, parameter :: do_mcmc    = .False.                     ! run mcmc or not
     logical, parameter :: do_snow    = .True.                      ! do soil snow process
     logical, parameter :: do_soilphy = .True.                      ! do soil physics
@@ -10,26 +10,28 @@ module mod_data
     logical, parameter :: do_restart = .False.
     logical, parameter :: do_ndep    = .False.
     logical, parameter :: do_simu    = .False.
+    logical, parameter :: do_leap    = .False.
     real,    parameter :: Ttreat     = 0.                          ! Temperature treatment, warming in air and soil temperature
-    real,    parameter :: CO2treat   = 0.                          ! CO2 treatmant, up to CO2treat, not add to Ca. CO2
+    real,    parameter :: CO2treat   = 280.                          ! CO2 treatmant, up to CO2treat, not add to Ca. CO2
     real,    parameter :: N_fert     = 0.                          ! 5.6 ! (11.2 gN m-2 yr-1, in spring, Duke Forest FACE)
     integer, parameter :: dtimes     = 24                          ! hourly simulation
 
     ! define some parameters for in/out
     character(200) :: parafile        = "../input/parameters.txt"
-    character(200) :: climatefile     = "../input/forcing.txt"
+    character(200) :: climatefile     = "../input/SPRUCE_forcing_plot07.txt"
     character(200) :: snowdepthfile   = "../input/SPRUCE_Snow_Depth_2011-2014.txt"
     character(len=1500) :: outdir     = "../outputs"
     character(len=1500) :: in_restart = "../outputs/restart_spinup.nc"
     character(len=50) watertablefile                               ! Jian: maybe used when not run soil_physical
     character(200) commts
     character(len=1000) :: outDir_h, outDir_d, outDir_m, outDir_csv, outFile_restart
+    character(len=1000) :: outDir_sp, outFile_sp
     real Simu_dailyflux14(14,1500000)                                ! output variables (Jian: need to modify according to CMIP6 for SPURCE-MIP) 
     real Simu_dailyflux14_2023(28,1500000)                           ! Jian: Just used for testing Matrix-MIP
     character(len=20) :: experiment = "control"                    ! for output based on SPRUCE-MIP form, such as "historical","control","w0-ambCO2","w2p25-ambCO2"..."w9-500CO2"
     
     ! parameters for spin-up
-    integer, parameter :: nloops     = 10000                           ! the times to cycle all of forcing data for spin-up
+    integer, parameter :: nloops     = 1                           ! the times to cycle all of forcing data for spin-up
     integer :: itest  ! add for testing
     integer :: iitest
 
@@ -358,29 +360,36 @@ module mod_data
     real evap_yr,transp_yr
     real N_up_yr,N_fix_yr,N_dep_yr,N_leach_yr,N_vol_yr
     ! -------------------------------------------------------------------------
-    ! ! carbon fluxes (Kg C m-2 s-1)
-    ! real gpp_y
-    ! real npp_y, nppLeaf_y, nppWood_y, nppStem_y, nppRoot_y, nppOther_y   ! According to SPRUCE-MIP, stem means above ground woody tissues which is different from wood tissues.
-    ! real ra_y,  raLeaf_y,  raStem_y,  raRoot_y,  raOther_y
-    ! real rMaint_y, rGrowth_y                                             ! maintenance respiration and growth respiration
-    ! real rh_y,  nbp_y                                                    ! heterotrophic respiration. NBP(net biome productivity) = GPP - Rh - Ra - other losses  
-    ! real wetlandCH4_y, wetlandCH4prod_y, wetlandCH4cons_y                ! wetland net fluxes of CH4, CH4 production, CH4 consumption
-    ! ! Carbon Pools  (KgC m-2)
-    ! real cLeaf_y, cStem_y, cRoot_y, cOther_y                             ! cOther: carbon biomass in other plant organs(reserves, fruits), Jian: maybe NSC storage in TECO?
-    ! real cLitter_y, cLitterCwd_y                                         ! litter (excluding coarse woody debris), Jian: fine litter in TECO?, cLitterCwd: carbon in coarse woody debris
-    ! real cSoil_y, cSoilLevels_y, cSoilFast_y, cSoilSlow_y, cSoilPassive_y                            ! cSoil: soil organic carbon (Jian: total soil carbon); cSoilLevels(depth-specific soil organic carbon, Jian: depth?); cSoilPools (different pools without depth)
-    ! real cCH4_y(nlayers)                                                          ! methane concentration
-    ! ! Nitrogen fluxes (kgN m-2 s-1)
-    ! real fBNF_y, fN2O_y, fNloss_y, fNnetmin_y, fNdep_y                   ! fBNF: biological nitrogen fixation; fN2O: loss of nitrogen through emission of N2O; fNloss:Total loss of nitrogen to the atmosphere and from leaching; net mineralizaiton and deposition of N
-    ! ! Nitrogen pools (kgN m-2)
-    ! real nLeaf_y, nStem_y, nRoot_y, nOther_y
-    ! real nLitter_y, nLitterCwd_y, nSoil_y, nMineral_y                    ! nMineral: Mineral nitrogen pool
-    ! ! energy fluxes (W m-2)
-    ! real hfls_y, hfss_y, SWnet_y, LWnet_y                                ! Sensible heat flux; Latent heat flux; Net shortwave radiation; Net longwave radiation
-    ! ! water fluxes (kg m-2 s-1)
-    ! real ec_y, tran_y, es_y                                              ! Canopy evaporation; Canopy transpiration; Soil evaporation
-    ! real hfsbl_y                                                         ! Snow sublimation
-    ! real mrro_y, mrros_y, mrrob_y                                        ! Total runoff; Surface runoff; Subsurface runoff
+    ! carbon fluxes (Kg C m-2 s-1)
+    real gpp_y
+    real npp_y, nppLeaf_y, nppWood_y, nppStem_y, nppRoot_y, nppOther_y   ! According to SPRUCE-MIP, stem means above ground woody tissues which is different from wood tissues.
+    real ra_y,  raLeaf_y,  raStem_y,  raRoot_y,  raOther_y
+    real rMaint_y, rGrowth_y                                             ! maintenance respiration and growth respiration
+    real rh_y,  nbp_y                                                    ! heterotrophic respiration. NBP(net biome productivity) = GPP - Rh - Ra - other losses  
+    real wetlandCH4_y, wetlandCH4prod_y, wetlandCH4cons_y                ! wetland net fluxes of CH4, CH4 production, CH4 consumption
+    ! Carbon Pools  (KgC m-2)
+    real cLeaf_y, cStem_y, cRoot_y, cOther_y                             ! cOther: carbon biomass in other plant organs(reserves, fruits), Jian: maybe NSC storage in TECO?
+    real cLitter_y, cLitterCwd_y                                         ! litter (excluding coarse woody debris), Jian: fine litter in TECO?, cLitterCwd: carbon in coarse woody debris
+    real cSoil_y, cSoilLevels_y(nlayers), cSoilFast_y,cSoilSlow_y,cSoilPassive_y                           ! cSoil: soil organic carbon (Jian: total soil carbon); cSoilLevels(depth-specific soil organic carbon, Jian: depth?); cSoilPools (different pools without depth)
+    real cCH4_y(nlayers)                                                          ! methane concentration
+    ! Nitrogen fluxes (kgN m-2 s-1)
+    real fBNF_y, fN2O_y, fNloss_y, fNnetmin_y, fNdep_y                   ! fBNF: biological nitrogen fixation; fN2O: loss of nitrogen through emission of N2O; fNloss:Total loss of nitrogen to the atmosphere and from leaching; net mineralizaiton and deposition of N
+    ! Nitrogen pools (kgN m-2)
+    real nLeaf_y, nStem_y, nRoot_y, nOther_y
+    real nLitter_y, nLitterCwd_y, nSoil_y, nMineral_y                    ! nMineral: Mineral nitrogen pool
+    ! energy fluxes (W m-2)
+    real hfls_y, hfss_y, SWnet_y, LWnet_y                                ! Sensible heat flux; Latent heat flux; Net shortwave radiation; Net longwave radiation
+    ! water fluxes (kg m-2 s-1)
+    real ec_y, tran_y, es_y                                              ! Canopy evaporation; Canopy transpiration; Soil evaporation
+    real hfsbl_y                                                         ! Snow sublimation
+    real mrro_y, mrros_y, mrrob_y                                        ! Total runoff; Surface runoff; Subsurface runoff
+    ! other
+    real mrso_y(nlayers)                                                   ! Kg m-2, soil moisture in each soil layer
+    real tsl_y(nlayers)                                                    ! K, soil temperature in each soil layer
+    real tsland_y                                                          ! K, surface temperature
+    real wtd_y                                                             ! m, Water table depth
+    real snd_y                                                             ! m, Total snow depth
+    real lai_y                                                             ! m2 m-2, Leaf area index
 
     ! matrix variables
     real mat_B(8,1), mat_A(8,8), mat_e(8,8), mat_k(8,8), mat_x(8,1), mat_Rh, mat_Rh_d ! for matrix
@@ -597,6 +606,27 @@ module mod_data
     real, dimension (:), allocatable :: all_snd_m                                                             ! m, Total snow depth
     real, dimension (:), allocatable :: all_lai_m                                                             ! m2 m-2, Leaf area index
 
+    ! spin-up results 
+    ! carbon fluxes (Kg C m-2 s-1)
+    real, dimension (:), allocatable :: sp_gpp_y, sp_npp_y, sp_ra_y, sp_rh_y 
+    real, dimension (:), allocatable :: sp_wetlandCH4_y, sp_wetlandCH4prod_y, sp_wetlandCH4cons_y
+    ! Carbon Pools  (KgC m-2)
+    real, dimension (:), allocatable :: sp_cLeaf_y, sp_cStem_y, sp_cRoot_y, sp_cOther_y                             
+    real, dimension (:), allocatable :: sp_cLitter_y, sp_cLitterCwd_y                                         ! litter (excluding coarse woody debris), Jian: fine litter in TECO?, cLitterCwd: carbon in coarse woody debris
+    real, dimension (:), allocatable :: sp_cSoil_y, sp_cSoilFast_y, sp_cSoilSlow_y, sp_cSoilPassive_y                            ! cSoil: soil organic carbon (Jian: total soil carbon); cSoilLevels(depth-specific soil organic carbon, Jian: depth?); cSoilPools (different pools without depth)
+    real, dimension (:,:), allocatable :: sp_cCH4_y                                                          ! methane concentration
+    ! Nitrogen fluxes (kgN m-2 s-1)
+    real, dimension (:), allocatable :: sp_fBNF_y, sp_fN2O_y, sp_fNloss_y, sp_fNnetmin_y, sp_fNdep_y                   ! fBNF: biological nitrogen fixation; fN2O: loss of nitrogen through emission of N2O; fNloss:Total loss of nitrogen to the atmosphere and from leaching; net mineralizaiton and deposition of N
+    ! Nitrogen pools (kgN m-2)
+    real, dimension (:), allocatable :: sp_nLeaf_y, sp_nStem_y, sp_nRoot_y
+    real, dimension (:), allocatable :: sp_nLitter_y, sp_nLitterCwd_y, sp_nSoil_y, sp_nMineral_y                    ! nMineral: Mineral nitrogen pool
+    ! energy fluxes (W m-2)
+    real, dimension (:), allocatable :: sp_hfls_y, sp_hfss_y                                                       ! Sensible heat flux; Latent heat flux; Net shortwave radiation; Net longwave radiation
+    ! water fluxes (kg m-2 s-1)
+    real, dimension (:), allocatable :: sp_ec_y, sp_tran_y, sp_es_y                                              ! Canopy evaporation; Canopy transpiration; Soil evaporation
+    real, dimension (:), allocatable :: sp_hfsbl_y                                                         ! Snow sublimation
+    real, dimension (:), allocatable :: sp_mrro_y, sp_mrros_y, sp_mrrob_y
+
     integer i
 
     ! ==============================================================================================
@@ -610,8 +640,8 @@ module mod_data
         Storage        = 60!32.09                                              ! g C/m2
         nsc            = 85.35
         stor_use       = Storage/720.                                       ! 720 hours, 30 days
-        N_deposit      = 2.34/8760. ! Nitrogen input (gN/h/m2, )
-        ! N_deposit      = 0.153/8760.
+        ! N_deposit      = 2.34/8760. ! Nitrogen input (gN/h/m2, )
+        N_deposit      = 0.153/8760.
         ! the unit of residence time is transformed from yearly to hourly
         ! tauC           = (/tau_L,tau_W,tau_R,tau_F,tau_C,tau_Micr,tau_Slow,tau_Pass/)*8760. 
         TauC           = (/Tau_Leaf,Tau_Wood,Tau_Root,Tau_F,Tau_C,Tau_Micro,Tau_slowSOM,Tau_Passive/)*8760.
@@ -970,9 +1000,76 @@ module mod_data
         fwsoil_yr=0.;  omega_yr=0.
         topfws_yr=0.
         ! hoy=0
-    end subroutine init_year
 
-    
+        ! carbon fluxes (Kg C m-2 s-1)
+        gpp_y            = 0.
+        npp_y            = 0.
+        nppLeaf_y        = 0.
+        nppWood_y        = 0.
+        nppStem_y        = 0.
+        nppRoot_y        = 0.
+        nppOther_y       = 0.  ! According to SPRUCE-MIP, stem means above ground woody tissues which is different from wood tissues.
+        ra_y             = 0.
+        raLeaf_y         = 0.
+        raStem_y         = 0.
+        raRoot_y         = 0.
+        raOther_y        = 0.
+        rMaint_y         = 0.
+        rGrowth_y        = 0.                                            ! maintenance respiration and growth respiration
+        rh_y             = 0.
+        nbp_y            = 0.                                                  ! heterotrophic respiration. NBP(net biome productivity) = GPP - Rh - Ra - other losses  
+        wetlandCH4_y     = 0.
+        wetlandCH4prod_y = 0.
+        wetlandCH4cons_y = 0.                ! wetland net fluxes of CH4, CH4 production, CH4 consumption
+        ! Carbon Pools  (KgC m-2)
+        cLeaf_y          = 0.
+        cStem_y          = 0.
+        cRoot_y          = 0.
+        cOther_y         = 0.                          ! cOther: carbon biomass in other plant organs(reserves, fruits), Jian: maybe NSC storage in TECO?
+        cLitter_y        = 0.
+        cLitterCwd_y     = 0.                                       ! litter (excluding coarse woody debris), Jian: fine litter in TECO?, cLitterCwd: carbon in coarse woody debris
+        cSoil_y          = 0.
+        cSoilLevels_y    = (/0.,0.,0.,0.,0.,0.,0.,0.,0.,0./)
+        cSoilFast_y      = 0.
+        cSoilSlow_y      = 0.
+        cSoilPassive_y   = 0.                                       ! cSoil: soil organic carbon (Jian: total soil carbon); cSoilLevels(depth-specific soil organic carbon, Jian: depth?); cSoilPools (different pools without depth)
+        cCH4_y           = (/0.,0.,0.,0.,0.,0.,0.,0.,0.,0./)                                                         ! methane concentration
+        ! Nitrogen fluxes (kgN m-2 s-1)
+        fBNF_y           = 0.
+        fN2O_y           = 0.
+        fNloss_y         = 0.
+        fNnetmin_y       = 0.
+        fNdep_y          = 0.               ! fBNF: biological nitrogen fixation; fN2O: loss of nitrogen through emission of N2O; fNloss:Total loss of nitrogen to the atmosphere and from leaching; net mineralizaiton and deposition of N
+        ! Nitrogen pools (kgN m-2)
+        nLeaf_y          = 0.
+        nStem_y          = 0.
+        nRoot_y          = 0.
+        nOther_y         = 0.
+        nLitter_y        = 0.
+        nLitterCwd_y     = 0.
+        nSoil_y          = 0.
+        nMineral_y       = 0.                 ! nMineral: Mineral nitrogen pool
+        ! energy fluxes (W m-2)
+        hfls_y           = 0.
+        hfss_y           = 0.
+        SWnet_y          = 0.
+        LWnet_y          = 0.                              ! Sensible heat flux; Latent heat flux; Net shortwave radiation; Net longwave radiation
+        ! water fluxes (kg m-2 s-1)
+        ec_y             = 0.
+        tran_y           = 0.
+        es_y             = 0.                                          ! Canopy evaporation; Canopy transpiration; Soil evaporation
+        hfsbl_y          = 0.                                                      ! Snow sublimation
+        mrro_y           = 0.
+        mrros_y          = 0.
+        mrrob_y          = 0.                                     ! Total runoff; Surface runoff; Subsurface runoff
+        ! other
+        mrso_y           = (/0.,0.,0.,0.,0.,0.,0.,0.,0.,0./)                                                  ! Kg m-2, soil moisture in each soil layer
+        tsl_y            = (/0.,0.,0.,0.,0.,0.,0.,0.,0.,0./)                                                  ! K, soil temperature in each soil layer
+        tsland_y         = 0.                                                      ! K, surface temperature
+        wtd_y            = 0.                                                     ! m, Water table depth
+        snd_y            = 0.                                                    ! m, Total snow depth
+        lai_y            = 0.                                                    ! m2 m-2, Leaf area index
+    end subroutine init_year
 
     subroutine assign_all_results(hours, days, months, years)
         implicit none
@@ -1399,6 +1496,7 @@ module mod_data
         deallocate(all_snd_m)                                                             ! m, Total snow depth
         deallocate(all_lai_m)                                                             ! m2 m-2, Leaf area index
     end subroutine deallocate_all_results
+    
 
     ! some functions to get parameters or some input data (eg. forcing data, observation data) 
     !=================================================================

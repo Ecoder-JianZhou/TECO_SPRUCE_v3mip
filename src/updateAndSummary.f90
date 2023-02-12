@@ -10,7 +10,7 @@ module mod_upAndSum
         ! integer iTotHourly
         convert_g2kg = 0.001
         convert_h2s  = 1/3600.
-        ! carbon fluxes (KgC m-2 s-1) Jian: TECO unit is gC m-2 s-1
+        ! carbon fluxes (KgC m-2 s-1) Jian: TECO unit is gC m-2 h-1
         gpp_h             = gpp*convert_g2kg*convert_h2s
         npp_h             = npp*convert_g2kg*convert_h2s
         nppLeaf_h         = NPP_L*convert_g2kg*convert_h2s
@@ -220,89 +220,89 @@ module mod_upAndSum
         mrros_m           = mrros_m          + mrros_h          /hoursOfmonth
         mrrob_m           = mrrob_m          + mrrob_h          /hoursOfmonth ! Total runoff; Surface runoff; Subsurface runoff
         ! other
-        mrso_m            = mrso_m           + mrro_h/24                  ! Kg m-2, soil moisture in each soil layer
-        tsl_m             = tsl_m            + tsl_h/24                   ! K, soil temperature in each soil layer
-        tsland_m          = tsland_m         + tsland_h/24                ! K, surface temperature
-        wtd_m             = wtd_m            + wtd_h/24                   ! m, Water table depth
-        snd_m             = snd_m            + snd_h/24                   ! m, Total snow depth
-        lai_m             = lai_m            + lai_h/24                   ! m2 m-2, Leaf area index
+        mrso_m            = mrso_m           + mrro_h           /hoursOfmonth                  ! Kg m-2, soil moisture in each soil layer
+        tsl_m             = tsl_m            + tsl_h            /hoursOfmonth                   ! K, soil temperature in each soil layer
+        tsland_m          = tsland_m         + tsland_h         /hoursOfmonth                ! K, surface temperature
+        wtd_m             = wtd_m            + wtd_h            /hoursOfmonth                   ! m, Water table depth
+        snd_m             = snd_m            + snd_h            /hoursOfmonth                   ! m, Total snow depth
+        lai_m             = lai_m            + lai_h            /hoursOfmonth                   ! m2 m-2, Leaf area index
         ! not used in SPRUCE-MIP
 
         
     end subroutine updateMonthly
 
-    ! subroutine updateYearly(hoursOfYear)
-    !     implicit none
-    !     integer hoursOfYear
-    !     ! carbon fluxes
-    !     gpp_y             = gpp_y            + gpp_h            /hoursOfYear
-    !     npp_y             = npp_y            + npp_h            /hoursOfYear
-    !     nppLeaf_y         = nppLeaf_y        + nppLeaf_h        /hoursOfYear
-    !     nppWood_y         = nppWood_y        + nppWood_h        /hoursOfYear
-    !     nppStem_y         = nppStem_y        + nppStem_h        /hoursOfYear        ! According to SPRUCE-MIP, stem means above ground woody tissues which is different from wood tissues.
-    !     nppRoot_y         = nppRoot_y        + nppRoot_h        /hoursOfYear
-    !     nppOther_y        = nppOther_y       + nppOther_h       /hoursOfYear
-    !     ra_y              = ra_y             + ra_h             /hoursOfYear
-    !     raLeaf_y          = raLeaf_y         + raLeaf_h         /hoursOfYear
-    !     raStem_y          = raStem_y         + raStem_h         /hoursOfYear
-    !     raRoot_y          = raRoot_y         + raRoot_h         /hoursOfYear
-    !     raOther_y         = raOther_y        + raOther_h        /hoursOfYear
-    !     rMaint_y          = rMaint_y         + rMaint_h         /hoursOfYear        ! maintenance respiration
-    !     rGrowth_y         = rGrowth_y        + rGrowth_h        /hoursOfYear        ! growth respiration
-    !     rh_y              = rh_y             + rh_h             /hoursOfYear        ! heterotrophic respiration
-    !     nbp_y             = nbp_y            + nbp_h            /hoursOfYear        ! NBP(net biome productivity) = GPP - Rh - Ra - other losses  
-    !     wetlandCH4_y      = wetlandCH4_y     + wetlandCH4_h     /hoursOfYear        ! wetland net fluxes of CH4
-    !     wetlandCH4prod_y  = wetlandCH4prod_y + wetlandCH4prod_h /hoursOfYear        ! wetland net fluxes of CH4 production
-    !     wetlandCH4cons_y  = wetlandCH4cons_y + wetlandCH4cons_h /hoursOfYear        ! wetland net fluxes of CH4 consumption
-    !     ! Carbon Pools  (KgC m-2)
-    !     cLeaf_y           = cLeaf_y          + cLeaf_h          /hoursOfYear
-    !     cStem_y           = cStem_y          + cStem_h          /hoursOfYear
-    !     cRoot_y           = cRoot_y          + cRoot_h          /hoursOfYear
-    !     cOther_y          = cOther_y         + cOther_h         /hoursOfYear        ! cOther: carbon biomass in other plant organs(reserves, fruits), Jian: maybe NSC storage in TECO?
-    !     cLitter_y         = cLitter_y        + cLitter_h        /hoursOfYear        ! litter (excluding coarse woody debris), Jian: fine litter in TECO?
-    !     cLitterCwd_y      = cLitterCwd_y     + cLitterCwd_h     /hoursOfYear        ! cLitterCwd: carbon in coarse woody debris
-    !     cSoil_y           = cSoil_y          + cSoil_h          /hoursOfYear        ! cSoil: soil organic carbon (Jian: total soil carbon);
-    !     cSoilLevels_y     = cSoilLevels_y    + cSoilLevels_h    /hoursOfYear        ! cSoilLevels(depth-specific soil organic carbon, Jian: depth?);
-    !     cSoilFast_y       = cSoilFast_y      + cSoilFast_h      /hoursOfYear        ! cSoilPools (different pools without depth)
-    !     cSoilSlow_y       = cSoilSlow_y      + cSoilSlow_h      /hoursOfYear
-    !     cSoilPassive_y    = cSoilPassive_y   + cSoilPassive_h   /hoursOfYear
-    !     cCH4_y            = cCH4_y           + cCH4_h           /hoursOfYear        ! methane concentration
-    !     ! Nitrogen fluxes (kgN m-2 s-1)
-    !     fBNF_y            = fBNF_y           + fBNF_h           /hoursOfYear        ! fBNF: biological nitrogen fixation;
-    !     fN2O_y            = fN2O_y           + fN2O_h           /hoursOfYear        ! fN2O: loss of nitrogen through emission of N2O;
-    !     fNloss_y          = fNloss_y         + fNloss_h         /hoursOfYear        ! fNloss:Total loss of nitrogen to the atmosphere and from leaching;
-    !     fNnetmin_y        = fNnetmin_y       + fNnetmin_h       /hoursOfYear        ! net mineralizaiton
-    !     fNdep_y           = fNdep_y          + fNdep_h          /hoursOfYear        ! deposition of N
-    !     ! Nitrogen pools (kgN m-2)
-    !     nLeaf_y           = nLeaf_y          + nLeaf_h          /hoursOfYear
-    !     nStem_y           = nStem_y          + nStem_h          /hoursOfYear
-    !     nRoot_y           = nRoot_y          + nRoot_h          /hoursOfYear
-    !     nOther_y          = nOther_y         + nOther_h         /hoursOfYear
-    !     nLitter_y         = nLitter_y        + nLitter_h        /hoursOfYear
-    !     nLitterCwd_y      = nLitterCwd_y     + nLitterCwd_h     /hoursOfYear
-    !     nSoil_y           = nSoil_y          + nSoil_h          /hoursOfYear
-    !     nMineral_y        = nMineral_y       + nMineral_h       /hoursOfYear        ! nMineral: Mineral nitrogen pool
-    !     ! energy fluxes (W m-2)
-    !     hfls_y            = hfls_y           + hfls_h           /hoursOfYear        ! Sensible heat flux;
-    !     hfss_y            = hfss_y           + hfss_h           /hoursOfYear        ! Latent heat flux;
-    !     SWnet_y           = SWnet_y          + SWnet_h          /hoursOfYear        ! Net shortwave radiation;
-    !     LWnet_y           = LWnet_y          + LWnet_h          /hoursOfYear        ! Net longwave radiation
-    !     ! water fluxes (kg m-2 s-1)
-    !     ec_y              = ec_y             + ec_h             /hoursOfYear
-    !     tran_y            = tran_y           + tran_h           /hoursOfYear
-    !     es_y              = es_y             + es_h             /hoursOfYear        ! Canopy evaporation; Canopy transpiration; Soil evaporation
-    !     hfsbl_y           = hfsbl_y          + hfsbl_h          /hoursOfYear        ! Snow sublimation
-    !     mrro_y            = mrro_y           + mrro_h           /hoursOfYear
-    !     mrros_y           = mrros_y          + mrros_h          /hoursOfYear
-    !     mrrob_y           = mrrob_y          + mrrob_h          /hoursOfYear        ! Total runoff; Surface runoff; Subsurface runoff
-    !     ! other
+    subroutine updateYearly(hoursOfYear)
+        implicit none
+        integer hoursOfYear
+        ! carbon fluxes
+        gpp_y             = gpp_y            + gpp_h            /hoursOfYear
+        npp_y             = npp_y            + npp_h            /hoursOfYear
+        nppLeaf_y         = nppLeaf_y        + nppLeaf_h        /hoursOfYear
+        nppWood_y         = nppWood_y        + nppWood_h        /hoursOfYear
+        nppStem_y         = nppStem_y        + nppStem_h        /hoursOfYear        ! According to SPRUCE-MIP, stem means above ground woody tissues which is different from wood tissues.
+        nppRoot_y         = nppRoot_y        + nppRoot_h        /hoursOfYear
+        nppOther_y        = nppOther_y       + nppOther_h       /hoursOfYear
+        ra_y              = ra_y             + ra_h             /hoursOfYear
+        raLeaf_y          = raLeaf_y         + raLeaf_h         /hoursOfYear
+        raStem_y          = raStem_y         + raStem_h         /hoursOfYear
+        raRoot_y          = raRoot_y         + raRoot_h         /hoursOfYear
+        raOther_y         = raOther_y        + raOther_h        /hoursOfYear
+        rMaint_y          = rMaint_y         + rMaint_h         /hoursOfYear        ! maintenance respiration
+        rGrowth_y         = rGrowth_y        + rGrowth_h        /hoursOfYear        ! growth respiration
+        rh_y              = rh_y             + rh_h             /hoursOfYear        ! heterotrophic respiration
+        nbp_y             = nbp_y            + nbp_h            /hoursOfYear        ! NBP(net biome productivity) = GPP - Rh - Ra - other losses  
+        wetlandCH4_y      = wetlandCH4_y     + wetlandCH4_h     /hoursOfYear        ! wetland net fluxes of CH4
+        wetlandCH4prod_y  = wetlandCH4prod_y + wetlandCH4prod_h /hoursOfYear        ! wetland net fluxes of CH4 production
+        wetlandCH4cons_y  = wetlandCH4cons_y + wetlandCH4cons_h /hoursOfYear        ! wetland net fluxes of CH4 consumption
+        ! Carbon Pools  (KgC m-2)
+        cLeaf_y           = cLeaf_y          + cLeaf_h          /hoursOfYear
+        cStem_y           = cStem_y          + cStem_h          /hoursOfYear
+        cRoot_y           = cRoot_y          + cRoot_h          /hoursOfYear
+        cOther_y          = cOther_y         + cOther_h         /hoursOfYear        ! cOther: carbon biomass in other plant organs(reserves, fruits), Jian: maybe NSC storage in TECO?
+        cLitter_y         = cLitter_y        + cLitter_h        /hoursOfYear        ! litter (excluding coarse woody debris), Jian: fine litter in TECO?
+        cLitterCwd_y      = cLitterCwd_y     + cLitterCwd_h     /hoursOfYear        ! cLitterCwd: carbon in coarse woody debris
+        cSoil_y           = cSoil_y          + cSoil_h          /hoursOfYear        ! cSoil: soil organic carbon (Jian: total soil carbon);
+        cSoilLevels_y     = cSoilLevels_y    + cSoilLevels_h    /hoursOfYear        ! cSoilLevels(depth-specific soil organic carbon, Jian: depth?);
+        cSoilFast_y       = cSoilFast_y      + cSoilFast_h      /hoursOfYear        ! cSoilPools (different pools without depth)
+        cSoilSlow_y       = cSoilSlow_y      + cSoilSlow_h      /hoursOfYear
+        cSoilPassive_y    = cSoilPassive_y   + cSoilPassive_h   /hoursOfYear
+        cCH4_y            = cCH4_y           + cCH4_h           /hoursOfYear        ! methane concentration
+        ! Nitrogen fluxes (kgN m-2 s-1)
+        fBNF_y            = fBNF_y           + fBNF_h           /hoursOfYear        ! fBNF: biological nitrogen fixation;
+        fN2O_y            = fN2O_y           + fN2O_h           /hoursOfYear        ! fN2O: loss of nitrogen through emission of N2O;
+        fNloss_y          = fNloss_y         + fNloss_h         /hoursOfYear        ! fNloss:Total loss of nitrogen to the atmosphere and from leaching;
+        fNnetmin_y        = fNnetmin_y       + fNnetmin_h       /hoursOfYear        ! net mineralizaiton
+        fNdep_y           = fNdep_y          + fNdep_h          /hoursOfYear        ! deposition of N
+        ! Nitrogen pools (kgN m-2)
+        nLeaf_y           = nLeaf_y          + nLeaf_h          /hoursOfYear
+        nStem_y           = nStem_y          + nStem_h          /hoursOfYear
+        nRoot_y           = nRoot_y          + nRoot_h          /hoursOfYear
+        nOther_y          = nOther_y         + nOther_h         /hoursOfYear
+        nLitter_y         = nLitter_y        + nLitter_h        /hoursOfYear
+        nLitterCwd_y      = nLitterCwd_y     + nLitterCwd_h     /hoursOfYear
+        nSoil_y           = nSoil_y          + nSoil_h          /hoursOfYear
+        nMineral_y        = nMineral_y       + nMineral_h       /hoursOfYear        ! nMineral: Mineral nitrogen pool
+        ! energy fluxes (W m-2)
+        hfls_y            = hfls_y           + hfls_h           /hoursOfYear        ! Sensible heat flux;
+        hfss_y            = hfss_y           + hfss_h           /hoursOfYear        ! Latent heat flux;
+        SWnet_y           = SWnet_y          + SWnet_h          /hoursOfYear        ! Net shortwave radiation;
+        LWnet_y           = LWnet_y          + LWnet_h          /hoursOfYear        ! Net longwave radiation
+        ! water fluxes (kg m-2 s-1)
+        ec_y              = ec_y             + ec_h             /hoursOfYear
+        tran_y            = tran_y           + tran_h           /hoursOfYear
+        es_y              = es_y             + es_h             /hoursOfYear        ! Canopy evaporation; Canopy transpiration; Soil evaporation
+        hfsbl_y           = hfsbl_y          + hfsbl_h          /hoursOfYear        ! Snow sublimation
+        mrro_y            = mrro_y           + mrro_h           /hoursOfYear
+        mrros_y           = mrros_y          + mrros_h          /hoursOfYear
+        mrrob_y           = mrrob_y          + mrrob_h          /hoursOfYear        ! Total runoff; Surface runoff; Subsurface runoff
+        ! other
 
-    !     ! not used in SPRUCE-MIP
-    !     rain_yr   = rain_yr   + rain
-    !     transp_yr = transp_yr + transp
-    !     evap_yr   = evap_yr   + evap
-    !     runoff_yr = runoff_yr + runoff
-    ! end subroutine updateYearly
+        ! not used in SPRUCE-MIP
+        rain_yr   = rain_yr   + rain
+        transp_yr = transp_yr + transp
+        evap_yr   = evap_yr   + evap
+        runoff_yr = runoff_yr + runoff
+    end subroutine updateYearly
 
     subroutine summaryHourly(iTotHourly)
         implicit NONE

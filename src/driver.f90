@@ -41,13 +41,21 @@ module driver
             ihour = forcing%hour(iforcing)
             ! if it is a new year
             if (iyear > year0) then                             ! a new year loop    
-                call init_year()                                ! initilization the variables of a year
+                if (iday .eq. 1) call init_year()                                ! initilization the variables of a year
             endif
             ! leap year
-            call isLeap_update_daysOfyear()
+            if (do_leap)then
+                if (iday .eq. 1) call isLeap_update_daysOfyear()
+            else
+                daysOfyear = 365
+            endif
+            call cal_daysOfmonth()
 
+            ! if ((itest .eq. 1) .and. (GPP .lt. 0.00000001) .and. (gpp .gt. 0)) stop
+            if ((itest .eq. 1) .and. (iforcing  .eq. 20800)) stop
             ! for update the results of monthly and yearly
-            call update_summary_init_monthly()
+            ! call update_summary_init_monthly()
+            call call_init_monthly()
 
             ! initialize the daily variables to run hourly simulaiton.
             if (ihour .eq. 0) then
@@ -266,6 +274,9 @@ module driver
            
             call updateMonthly(hoursOfmonth)
 
+            call updateYearly(hoursOfYear)
+            ! write(*,*)"test gpp_y : ", gpp_y, cSoil_y, cSoil_h, cSoil_h/hoursOfYear
+
             ! sum of the whole year
             diff_yr = diff_yr + difference
             gpp_yr  = gpp_yr  + gpp
@@ -298,7 +309,7 @@ module driver
             GW_yr   = GW_yr   + NPP*alpha_W
             GR_yr   = GR_yr   + NPP*alpha_R
 
-            ! call updateYearly(hoursOfYear)
+            
 
             ! ! added for soil thermal      unknown function check later   Shuang
             ! if((yr+first_year-1).eq.obs_soilwater(1,k1) .and.    &
@@ -386,6 +397,9 @@ module driver
                 ! record_yr(i_record) = iyear
                 i_record = i_record+1
             end if
+
+            call call_summary_monthly()
+
             ! if ((iyear > year0) .or. ((year0 .eq. first_year) .and. (iday .eq.1))) then      
             if (iforcing < nforcing)then
                 if (forcing%year(iforcing+1)>iyear) then            
@@ -400,7 +414,7 @@ module driver
                 storage      = accumulation
                 stor_use     = Storage/720.
                 accumulation = 0.0
-                onset=0
+                onset        = 0
             endif
         enddo
     end subroutine teco_simu
@@ -422,111 +436,94 @@ module driver
         endif
     end subroutine isLeap_update_daysOfyear
 
-    subroutine update_summary_init_monthly()
+    subroutine cal_daysOfmonth()
         implicit none
+        ! update the month numbers according to common or leap year
         if (daysOfyear .eq. 365) then ! common year
             hoursOfYear = 365*24
             daysOfmonth = (/31,59,90,120,151,181,212,243,273,304,334,365/)
-            if((iday .eq. 365) .and. (ihour .eq. 23))  call summaryMonthly(iTotMonthly)
         else
             hoursOfYear = 366*24
             daysOfmonth = (/31,60,91,121,152,182,213,244,274,305,335,366/)
-            if((iday .eq. 366) .and. (ihour .eq. 23)) call summaryMonthly(iTotMonthly)
+        endif
+    end subroutine cal_daysOfmonth
+
+    subroutine call_init_monthly()
+        implicit none
+        if (iday .eq. 1) then
+            hoursOfmonth = (daysOfmonth(1)-0)*24
+            if (ihour .eq. 0) call init_monthly()
         endif
 
-        ! select case (iday)
-        if (iday .eq. 1) then
-            ! case (1)  ! first day of Jan.
-                hoursOfmonth = (daysOfmonth(1)-0)*24
-                if (ihour .eq. 0) call init_monthly()
-        endif
         if (iday .eq. daysOfmonth(1)+1)then
-            ! case (daysOfmonth(1)+1)
-                hoursOfmonth = (daysOfmonth(2)-daysOfmonth(1))*24
-                if (ihour .eq. 0) then
-                    call summaryMonthly(iTotMonthly)
-                    call init_monthly()
-                endif
+            hoursOfmonth = (daysOfmonth(2)-daysOfmonth(1))*24
+            if (ihour .eq. 0) call init_monthly()
         endif
+
         if (iday .eq. daysOfmonth(2)+1)then
-            ! case (daysOfmonth(2)+1)
-                hoursOfmonth = (daysOfmonth(3)-daysOfmonth(2))*24
-                if (ihour .eq. 0) then
-                    call summaryMonthly(iTotMonthly)
-                    call init_monthly()
-                endif
+            hoursOfmonth = (daysOfmonth(3)-daysOfmonth(2))*24
+            if (ihour .eq. 0) call init_monthly()
         endif
+
         if (iday .eq. daysOfmonth(3)+1)then
-            ! case (daysOfmonth(3)+1)
-                hoursOfmonth = (daysOfmonth(4)-daysOfmonth(3))*24
-                if (ihour .eq. 0) then
-                    call summaryMonthly(iTotMonthly)
-                    call init_monthly()
-                endif
-        ENDIF
+            hoursOfmonth = (daysOfmonth(4)-daysOfmonth(3))*24
+            if (ihour .eq. 0) call init_monthly()
+        endif
+
         if (iday .eq. daysOfmonth(4)+1)then
-            ! case (daysOfmonth(4)+1)
-                hoursOfmonth = (daysOfmonth(5)-daysOfmonth(4))*24
-                if (ihour .eq. 0) then
-                    call summaryMonthly(iTotMonthly)
-                    call init_monthly()
-                endif
+            hoursOfmonth = (daysOfmonth(5)-daysOfmonth(4))*24
+            if (ihour .eq. 0) call init_monthly()
         endif
+
         if (iday .eq. daysOfmonth(5)+1)then
-            ! case (daysOfmonth(5)+1)
-                hoursOfmonth = (daysOfmonth(6)-daysOfmonth(5))*24
-                if (ihour .eq. 0) then
-                    call summaryMonthly(iTotMonthly)
-                    call init_monthly()
-                endif
+            hoursOfmonth = (daysOfmonth(6)-daysOfmonth(5))*24
+            if (ihour .eq. 0) call init_monthly()
         endif
+        
         if(iday .eq. daysOfmonth(6)+1)then
-            ! case (daysOfmonth(6)+1)
-                hoursOfmonth = (daysOfmonth(7)-daysOfmonth(6))*24
-                if (ihour .eq. 0) then
-                    call summaryMonthly(iTotMonthly)
-                    call init_monthly()
-                endif
+            hoursOfmonth = (daysOfmonth(7)-daysOfmonth(6))*24
+            if (ihour .eq. 0) call init_monthly()
         endif
+
         if(iday .eq. daysOfmonth(7)+1)then
-            ! case (daysOfmonth(7)+1)
-                hoursOfmonth = (daysOfmonth(8)-daysOfmonth(7))*24
-                if (ihour .eq. 0) then
-                    call summaryMonthly(iTotMonthly)
-                    call init_monthly()
-                endif
+            hoursOfmonth = (daysOfmonth(8)-daysOfmonth(7))*24
+            if (ihour .eq. 0) call init_monthly()
         endif
+
         if(iday .eq. daysOfmonth(8)+1)then
-            ! case (daysOfmonth(8)+1)
-                hoursOfmonth = (daysOfmonth(9)-daysOfmonth(8))*24
-                if (ihour .eq. 0) then
-                    call summaryMonthly(iTotMonthly)
-                    call init_monthly()
-                endif
+            hoursOfmonth = (daysOfmonth(9)-daysOfmonth(8))*24
+            if (ihour .eq. 0) call init_monthly()
         endif
+
         if(iday .eq. daysOfmonth(9)+1)then
-            ! case (daysOfmonth(9)+1)
-                hoursOfmonth = (daysOfmonth(10)-daysOfmonth(9))*24
-                if (ihour .eq. 0) then
-                    call summaryMonthly(iTotMonthly)
-                    call init_monthly()
-                endif
+            hoursOfmonth = (daysOfmonth(10)-daysOfmonth(9))*24
+            if (ihour .eq. 0) call init_monthly()
         endif
+
         if(iday .eq. daysOfmonth(10)+1)then
-            ! case (daysOfmonth(10)+1)
-                hoursOfmonth = (daysOfmonth(11)-daysOfmonth(10))*24
-                if (ihour .eq. 0) then
-                    call summaryMonthly(iTotMonthly)
-                    call init_monthly()
-                endif
+            hoursOfmonth = (daysOfmonth(11)-daysOfmonth(10))*24
+            if (ihour .eq. 0) call init_monthly()
         endif
+
         if(iday .eq. daysOfmonth(11)+1)then
-            ! case (daysOfmonth(11)+1)
-                hoursOfmonth = (daysOfmonth(12)-daysOfmonth(11))*24
-                if (ihour .eq. 0) then
-                    call summaryMonthly(iTotMonthly)
-                    call init_monthly()
-                endif
+            hoursOfmonth = (daysOfmonth(12)-daysOfmonth(11))*24
+            if (ihour .eq. 0) call init_monthly()
         endif
-    end subroutine update_summary_init_monthly
+    end subroutine call_init_monthly
+
+    subroutine call_summary_monthly()
+        implicit none
+        if ((iday .eq. daysOfmonth(1))  .and. (ihour .eq.23)) call summaryMonthly(iTotMonthly)
+        if ((iday .eq. daysOfmonth(2))  .and. (ihour .eq.23)) call summaryMonthly(iTotMonthly)
+        if ((iday .eq. daysOfmonth(3))  .and. (ihour .eq.23)) call summaryMonthly(iTotMonthly)
+        if ((iday .eq. daysOfmonth(4))  .and. (ihour .eq.23)) call summaryMonthly(iTotMonthly)
+        if ((iday .eq. daysOfmonth(5))  .and. (ihour .eq.23)) call summaryMonthly(iTotMonthly)
+        if ((iday .eq. daysOfmonth(6))  .and. (ihour .eq.23)) call summaryMonthly(iTotMonthly)
+        if ((iday .eq. daysOfmonth(7))  .and. (ihour .eq.23)) call summaryMonthly(iTotMonthly)
+        if ((iday .eq. daysOfmonth(8))  .and. (ihour .eq.23)) call summaryMonthly(iTotMonthly)
+        if ((iday .eq. daysOfmonth(9))  .and. (ihour .eq.23)) call summaryMonthly(iTotMonthly)
+        if ((iday .eq. daysOfmonth(10)) .and. (ihour .eq.23)) call summaryMonthly(iTotMonthly)
+        if ((iday .eq. daysOfmonth(11)) .and. (ihour .eq.23)) call summaryMonthly(iTotMonthly)
+        if ((iday .eq. daysOfmonth(12)) .and. (ihour .eq.23)) call summaryMonthly(iTotMonthly)
+    end subroutine call_summary_monthly
 end module driver

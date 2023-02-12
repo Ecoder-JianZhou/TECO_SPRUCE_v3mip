@@ -400,11 +400,11 @@ module mod_ncd_io
         ! monthly cSoilFast_m
         call write_nc(outDir_m,nMonths,all_cSoilFast_m,"cSoilFast","kgC m-2", "Fast soil organic carbon","monthly",1)
         ! monthly cSoilSlow_m
-        call write_nc(outDir_m,nMonths,all_cSoilSlow_m,"cSoilSlow","kgC m-2 s-1", "Slow soil organic carbon","monthly",1)
+        call write_nc(outDir_m,nMonths,all_cSoilSlow_m,"cSoilSlow","kgC m-2", "Slow soil organic carbon","monthly",1)
         ! monthly cSoilPassive_m                            ! cSoil: soil organic carbon (Jian: total soil carbon); cSoilLevels(depth-specific soil organic carbon, Jian: depth?); cSoilPools (different pools without depth)
-        call write_nc(outDir_m,nMonths,all_cSoilPassive_m,"cSoilPassive","kgC m-2 s-1", "Passive soil organic carbon","monthly",1)
+        call write_nc(outDir_m,nMonths,all_cSoilPassive_m,"cSoilPassive","kgC m-2", "Passive soil organic carbon","monthly",1)
         ! monthly cCH4_m                                                        ! methane concentration
-        call write_nc(outDir_m,nMonths,all_cCH4_m,"cCH4","kgC m-2 s-1", "Methane concentration","monthly",nlayers)
+        call write_nc(outDir_m,nMonths,all_cCH4_m,"cCH4","kgC m-2", "Methane concentration","monthly",nlayers)
         
         ! Nitrogen fluxes (kgN m-2 s-1)
         ! monthly fBNF_m
@@ -881,6 +881,157 @@ module mod_ncd_io
         CALL check(nf90_close(ncid))
         !:=========================================================================
     end subroutine read_restart
+
+    ! ----------------------------------------------
+    subroutine write_spinup_res()
+        implicit none
+        integer(KIND=4) :: ncid, dimid_nloops, dimid_nlayer
+        integer(kind=4) :: id_sp_gpp
+        integer(kind=4) :: id_sp_npp
+        integer(kind=4) :: id_sp_ra
+        integer(kind=4) :: id_sp_rh
+        integer(kind=4) :: id_sp_wetlandCH4
+        integer(kind=4) :: id_sp_wetlandCH4prod
+        integer(kind=4) :: id_sp_wetlandCH4cons
+        ! Carbon Pools  (KgC m-2)
+        integer(kind=4) :: id_sp_cLeaf
+        integer(kind=4) :: id_sp_cStem
+        integer(kind=4) :: id_sp_cRoot
+        integer(kind=4) :: id_sp_cOther        
+        integer(kind=4) :: id_sp_cLitter
+        integer(kind=4) :: id_sp_cLitterCwd      
+        integer(kind=4) :: id_sp_cSoil
+        integer(kind=4) :: id_sp_cSoilFast
+        integer(kind=4) :: id_sp_cSoilSlow
+        integer(kind=4) :: id_sp_cSoilPassive
+        integer(kind=4) :: id_sp_cCH4
+        ! Nitrogen fluxes (kgN m-2 s-1)
+        integer(kind=4) :: id_sp_fBNF
+        integer(kind=4) :: id_sp_fN2O
+        integer(kind=4) :: id_sp_fNloss
+        integer(kind=4) :: id_sp_fNnetmin
+        integer(kind=4) :: id_sp_fNdep 
+        ! Nitrogen pools (kgN m-2)
+        integer(kind=4) :: id_sp_nLeaf
+        integer(kind=4) :: id_sp_nStem
+        integer(kind=4) :: id_sp_nRoot
+        integer(kind=4) :: id_sp_nLitter
+        integer(kind=4) :: id_sp_nLitterCwd
+        integer(kind=4) :: id_sp_nSoil
+        integer(kind=4) :: id_sp_nMineral
+        ! energy fluxes (W m-2)
+        integer(kind=4) :: id_sp_hfls 
+        integer(kind=4) :: id_sp_hfss
+        ! water fluxes (kg m-2 s-1)
+        integer(kind=4) :: id_sp_ec
+        integer(kind=4) :: id_sp_tran
+        integer(kind=4) :: id_sp_es
+        integer(kind=4) :: id_sp_hfsbl
+        integer(kind=4) :: id_sp_mrro
+        integer(kind=4) :: id_sp_mrros
+        integer(kind=4) :: id_sp_mrrob
+
+        !Create the netCDF file.
+        CALL check(nf90_create(outFile_sp, NF90_CLOBBER, ncid))
+        !Define the dimensions.
+        CALL check(nf90_def_dim(ncid, "time",     nloops, dimid_nloops))
+        call check(nf90_def_dim(ncid, "n_layers", nlayers, dimid_nlayer))
+        ! Define the variables
+
+        CALL check(nf90_def_var(ncid, "gpp",            NF90_FLOAT, dimid_nloops, id_sp_gpp))
+        CALL check(nf90_def_var(ncid, "npp",            NF90_FLOAT, dimid_nloops, id_sp_npp))
+        CALL check(nf90_def_var(ncid, "ra",             NF90_FLOAT, dimid_nloops, id_sp_ra))
+        CALL check(nf90_def_var(ncid, "rh",             NF90_FLOAT, dimid_nloops, id_sp_rh))
+        CALL check(nf90_def_var(ncid, "wetlandCH4",     NF90_FLOAT, dimid_nloops, id_sp_wetlandCH4))
+        CALL check(nf90_def_var(ncid, "wetlandCH4prod", NF90_FLOAT, dimid_nloops, id_sp_wetlandCH4prod))
+        CALL check(nf90_def_var(ncid, "wetlandCH4cons", NF90_FLOAT, dimid_nloops, id_sp_wetlandCH4cons))
+        ! Carbon Pools  (KgC m-2)
+        CALL check(nf90_def_var(ncid, "cLeaf",          NF90_FLOAT, dimid_nloops, id_sp_cLeaf))
+        CALL check(nf90_def_var(ncid, "cStem",          NF90_FLOAT, dimid_nloops, id_sp_cStem))
+        CALL check(nf90_def_var(ncid, "cRoot",          NF90_FLOAT, dimid_nloops, id_sp_cRoot))
+        CALL check(nf90_def_var(ncid, "cOther",         NF90_FLOAT, dimid_nloops, id_sp_cOther))
+        CALL check(nf90_def_var(ncid, "cLitter",        NF90_FLOAT, dimid_nloops, id_sp_cLitter))
+        CALL check(nf90_def_var(ncid, "cLitterCwd",     NF90_FLOAT, dimid_nloops, id_sp_cLitterCwd))
+        CALL check(nf90_def_var(ncid, "cSoil",          NF90_FLOAT, dimid_nloops, id_sp_cSoil))
+        CALL check(nf90_def_var(ncid, "cSoilFast",      NF90_FLOAT, dimid_nloops, id_sp_cSoilFast))
+        CALL check(nf90_def_var(ncid, "cSoilSlow",      NF90_FLOAT, dimid_nloops, id_sp_cSoilSlow))
+        CALL check(nf90_def_var(ncid, "cSoilPassive",   NF90_FLOAT, dimid_nloops, id_sp_cSoilPassive))
+        CALL check(nf90_def_var(ncid, "cCH4",           NF90_FLOAT, (/dimid_nloops,dimid_nlayer/), id_sp_cCH4))
+        ! Nitrogen fluxes (kgN m-2 s-1)
+        CALL check(nf90_def_var(ncid, "fBNF",           NF90_FLOAT, dimid_nloops, id_sp_fBNF))
+        CALL check(nf90_def_var(ncid, "fN2O",           NF90_FLOAT, dimid_nloops, id_sp_fN2O))
+        CALL check(nf90_def_var(ncid, "fNloss",         NF90_FLOAT, dimid_nloops, id_sp_fNloss))
+        CALL check(nf90_def_var(ncid, "fNnetmin",       NF90_FLOAT, dimid_nloops, id_sp_fNnetmin))
+        CALL check(nf90_def_var(ncid, "fNdep",          NF90_FLOAT, dimid_nloops, id_sp_fNdep))
+        ! Nitrogen pools (kgN m-2)
+        CALL check(nf90_def_var(ncid, "nLeaf",          NF90_FLOAT, dimid_nloops, id_sp_nLeaf))
+        CALL check(nf90_def_var(ncid, "nStem",          NF90_FLOAT, dimid_nloops, id_sp_nStem))
+        CALL check(nf90_def_var(ncid, "nRoot",          NF90_FLOAT, dimid_nloops, id_sp_nRoot))
+        CALL check(nf90_def_var(ncid, "nLitter",        NF90_FLOAT, dimid_nloops, id_sp_nLitter))
+        CALL check(nf90_def_var(ncid, "nLitterCwd",     NF90_FLOAT, dimid_nloops, id_sp_nLitterCwd))
+        CALL check(nf90_def_var(ncid, "nSoil",          NF90_FLOAT, dimid_nloops, id_sp_nSoil))
+        CALL check(nf90_def_var(ncid, "nMineral",       NF90_FLOAT, dimid_nloops, id_sp_nMineral))
+        ! energy fluxes (W m-2)
+        CALL check(nf90_def_var(ncid, "hfls",           NF90_FLOAT, dimid_nloops, id_sp_hfls))
+        CALL check(nf90_def_var(ncid, "hfss",           NF90_FLOAT, dimid_nloops, id_sp_hfss))
+        ! water fluxes (kg m-2 s-1)
+        CALL check(nf90_def_var(ncid, "ec",             NF90_FLOAT, dimid_nloops, id_sp_ec))
+        CALL check(nf90_def_var(ncid, "tran",           NF90_FLOAT, dimid_nloops, id_sp_tran))
+        CALL check(nf90_def_var(ncid, "es",             NF90_FLOAT, dimid_nloops, id_sp_es))
+        CALL check(nf90_def_var(ncid, "hfsbl",          NF90_FLOAT, dimid_nloops, id_sp_hfsbl))
+        CALL check(nf90_def_var(ncid, "mrro",           NF90_FLOAT, dimid_nloops, id_sp_mrro))
+        CALL check(nf90_def_var(ncid, "mrros",          NF90_FLOAT, dimid_nloops, id_sp_mrros))
+        CALL check(nf90_def_var(ncid, "mrrob",          NF90_FLOAT, dimid_nloops, id_sp_mrrob))
+
+        CALL check(nf90_enddef(ncid)) !End Definitions
+
+        CALL check(nf90_put_var(ncid, id_sp_gpp,            sp_gpp_y))
+        CALL check(nf90_put_var(ncid, id_sp_npp,            sp_npp_y))
+        CALL check(nf90_put_var(ncid, id_sp_ra,             sp_ra_y))
+        CALL check(nf90_put_var(ncid, id_sp_rh,             sp_rh_y))
+        CALL check(nf90_put_var(ncid, id_sp_wetlandCH4,     sp_wetlandCH4_y))
+        CALL check(nf90_put_var(ncid, id_sp_wetlandCH4prod, sp_wetlandCH4prod_y))
+        CALL check(nf90_put_var(ncid, id_sp_wetlandCH4cons, sp_wetlandCH4cons_y))
+        ! Carbon Pools  (KgC m-2)
+        CALL check(nf90_put_var(ncid, id_sp_cLeaf,          sp_cLeaf_y))
+        CALL check(nf90_put_var(ncid, id_sp_cStem,          sp_cStem_y))
+        CALL check(nf90_put_var(ncid, id_sp_cRoot,          sp_cRoot_y))
+        CALL check(nf90_put_var(ncid, id_sp_cOther,         sp_cOther_y))
+        CALL check(nf90_put_var(ncid, id_sp_cLitter,        sp_cLitter_y))
+        CALL check(nf90_put_var(ncid, id_sp_cLitterCwd,     sp_cLitterCwd_y))
+        CALL check(nf90_put_var(ncid, id_sp_cSoil,          sp_cSoil_y))
+        CALL check(nf90_put_var(ncid, id_sp_cSoilFast,      sp_cSoilFast_y))
+        CALL check(nf90_put_var(ncid, id_sp_cSoilSlow,      sp_cSoilSlow_y))
+        CALL check(nf90_put_var(ncid, id_sp_cSoilPassive,   sp_cSoilPassive_y))
+        CALL check(nf90_put_var(ncid, id_sp_cCH4,           sp_cCH4_y))
+        ! Nitrogen fluxes (kgN m-2 s-1)
+        CALL check(nf90_put_var(ncid, id_sp_fBNF,           sp_fBNF_y))
+        CALL check(nf90_put_var(ncid, id_sp_fN2O,           sp_fN2O_y))
+        CALL check(nf90_put_var(ncid, id_sp_fNloss,         sp_fNloss_y))
+        CALL check(nf90_put_var(ncid, id_sp_fNnetmin,       sp_fNnetmin_y))
+        CALL check(nf90_put_var(ncid, id_sp_fNdep,          sp_fNdep_y))
+        ! Nitrogen pools (kgN m-2)
+        CALL check(nf90_put_var(ncid, id_sp_nLeaf,          sp_nLeaf_y))
+        CALL check(nf90_put_var(ncid, id_sp_nStem,          sp_nStem_y))
+        CALL check(nf90_put_var(ncid, id_sp_nRoot,          sp_nRoot_y))
+        CALL check(nf90_put_var(ncid, id_sp_nLitter,        sp_nLitter_y))
+        CALL check(nf90_put_var(ncid, id_sp_nLitterCwd,     sp_nLitterCwd_y))
+        CALL check(nf90_put_var(ncid, id_sp_nSoil,          sp_nSoil_y))
+        CALL check(nf90_put_var(ncid, id_sp_nMineral,       sp_nMineral_y))
+        ! energy fluxes (W m-2)
+        CALL check(nf90_put_var(ncid, id_sp_hfls,           sp_hfls_y))
+        CALL check(nf90_put_var(ncid, id_sp_hfss,           sp_hfss_y))
+        ! water fluxes (kg m-2 s-1)
+        CALL check(nf90_put_var(ncid, id_sp_ec,             sp_ec_y))
+        CALL check(nf90_put_var(ncid, id_sp_tran,           sp_tran_y))
+        CALL check(nf90_put_var(ncid, id_sp_es,             sp_es_y))
+        CALL check(nf90_put_var(ncid, id_sp_hfsbl,          sp_hfsbl_y))
+        CALL check(nf90_put_var(ncid, id_sp_mrro,           sp_mrro_y))
+        CALL check(nf90_put_var(ncid, id_sp_mrros,          sp_mrros_y))
+        CALL check(nf90_put_var(ncid, id_sp_mrrob,          sp_mrrob_y))
+        ! endif
+        CALL check(nf90_close(ncid))
+    end subroutine write_spinup_res
 
     subroutine write_nc(outfile, lenTime, data, varName, unit, description, freq, nSoilLayer)
         IMPLICIT NONE
