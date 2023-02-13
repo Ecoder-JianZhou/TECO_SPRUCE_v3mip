@@ -177,6 +177,7 @@ module mod_ncd_io
         call write_nc(outDir_h,nHours,all_snd_h,"snd","m", "Total snow depth","hourly",1)
         ! Hourly lai_h
         call write_nc(outDir_h,nHours,all_lai_h,"lai","m2 m-2", "Leaf area index","hourly",1)
+        call write_nc(outDir_h,nHours,all_gdd5_h,"GDD5","m2 m-2", "GDD5","hourly",1)
 
 
 

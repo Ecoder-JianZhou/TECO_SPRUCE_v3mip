@@ -375,6 +375,7 @@ module mod_upAndSum
         all_wtd_h(iTotHourly)            = wtd_h                                                 ! m, Water table depth
         all_snd_h(iTotHourly)            = snd_h                                                 ! m, Total snow depth
         all_lai_h(iTotHourly)            = lai_h                     ! m2 m-2, Leaf area index
+        all_gdd5_h(iTotHourly)           = GDD5
 
         iTotHourly = iTotHourly+1
     end subroutine summaryHourly

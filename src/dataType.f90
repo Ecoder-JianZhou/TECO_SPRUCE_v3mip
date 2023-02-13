@@ -1,7 +1,7 @@
 module mod_data
     implicit none
     ! run settings 
-    logical, parameter :: do_spinup  = .True.                     ! run spinup or not
+    logical, parameter :: do_spinup  = .False.                     ! run spinup or not
     logical, parameter :: do_mcmc    = .False.                     ! run mcmc or not
     logical, parameter :: do_snow    = .True.                      ! do soil snow process
     logical, parameter :: do_soilphy = .True.                      ! do soil physics
@@ -31,7 +31,7 @@ module mod_data
     character(len=20) :: experiment = "control"                    ! for output based on SPRUCE-MIP form, such as "historical","control","w0-ambCO2","w2p25-ambCO2"..."w9-500CO2"
     
     ! parameters for spin-up
-    integer, parameter :: nloops     = 1                           ! the times to cycle all of forcing data for spin-up
+    integer, parameter :: nloops     = 100                           ! the times to cycle all of forcing data for spin-up
     integer :: itest  ! add for testing
     integer :: iitest
 
@@ -462,7 +462,8 @@ module mod_data
     real, dimension (:), allocatable :: all_tsland_h                                                          ! K, surface temperature
     real, dimension (:), allocatable :: all_wtd_h                                                             ! m, Water table depth
     real, dimension (:), allocatable :: all_snd_h                                                             ! m, Total snow depth
-    real, dimension (:), allocatable :: all_lai_h                                                             ! m2 m-2, Leaf area index
+    real, dimension (:), allocatable :: all_lai_h 
+    real, dimension (:), allocatable :: all_gdd5_h                                                            ! m2 m-2, Leaf area index
     
 
     ! daily: 
@@ -985,22 +986,30 @@ module mod_data
 
     subroutine init_year()
         implicit none
-        GDD5     = 0.0; onset     = 0;   phenoset=0;  diff_yr=0.0; gpp_yr=0.0
-        R_Ntr_yr = 0.;  NPP_yr    = 0.0; Rh_yr =0.0;  Rh4_yr=0.0; Rh5_yr=0.0
-        Rh6_yr   = 0.0; Rh7_yr    = 0.0; Rh8_yr=0.0;  Ra_yr =0.0; GL_yr=0.0
-        GW_yr    = 0.0; GR_yr     = 0.0; Pool1=0.0;   Pool2=0.0; Pool3=0.0
-        Pool4    = 0.0; Pool5     = 0.0; Pool6=0.0;   Pool7=0.0; Pool8=0.0
-        out1_yr  = 0.0; out2_yr   = 0.0; out3_yr=0.0; out4_yr = 0.0; out5_yr = 0.0
-        out6_yr  = 0.0; out7_yr   = 0.0; out8_yr   = 0.0;  NEE_yr    = 0.0
-        ! water fluxes
-        rain_yr  = 0.0; transp_yr = 0.0; evap_yr   = 0.0; runoff_yr = 0.0
-        ! Nitrogen fluxes
-        N_up_yr  = 0;   N_fix_yr  = 0.; N_dep_yr=0.; N_leach_yr=0.; N_vol_yr=0.
-        ! ============================== test variable
-        fwsoil_yr=0.;  omega_yr=0.
-        topfws_yr=0.
+        GDD5      = 0.0; 
+        ! onset     = 0;   
+        ! phenoset  = 0; 
+        !  diff_yr=0.0; gpp_yr=0.0
+        ! R_Ntr_yr = 0.;  NPP_yr    = 0.0; Rh_yr =0.0;  Rh4_yr=0.0; Rh5_yr=0.0
+        ! Rh6_yr   = 0.0; Rh7_yr    = 0.0; Rh8_yr=0.0;  Ra_yr =0.0; GL_yr=0.0
+        ! GW_yr    = 0.0; GR_yr     = 0.0; Pool1=0.0;   Pool2=0.0; Pool3=0.0
+        ! Pool4    = 0.0; Pool5     = 0.0; Pool6=0.0;   Pool7=0.0; Pool8=0.0
+        ! out1_yr  = 0.0; out2_yr   = 0.0; out3_yr=0.0; out4_yr = 0.0; out5_yr = 0.0
+        ! out6_yr  = 0.0; out7_yr   = 0.0; out8_yr   = 0.0;  NEE_yr    = 0.0
+        ! ! water fluxes
+        ! rain_yr  = 0.0; transp_yr = 0.0; evap_yr   = 0.0; runoff_yr = 0.0
+        ! ! Nitrogen fluxes
+        ! N_up_yr  = 0;   N_fix_yr  = 0.; N_dep_yr=0.; N_leach_yr=0.; N_vol_yr=0.
+        ! ! ============================== test variable
+        ! fwsoil_yr=0.;  omega_yr=0.
+        ! topfws_yr=0.
         ! hoy=0
+    end subroutine init_year
 
+    subroutine init_update_year()
+        ! GDD5      = 0.0; 
+        onset     = 0;
+        phenoset  = 0;
         ! carbon fluxes (Kg C m-2 s-1)
         gpp_y            = 0.
         npp_y            = 0.
@@ -1069,7 +1078,7 @@ module mod_data
         wtd_y            = 0.                                                     ! m, Water table depth
         snd_y            = 0.                                                    ! m, Total snow depth
         lai_y            = 0.                                                    ! m2 m-2, Leaf area index
-    end subroutine init_year
+    end subroutine init_update_year
 
     subroutine assign_all_results(hours, days, months, years)
         implicit none
@@ -1140,7 +1149,8 @@ module mod_data
         allocate(all_tsland_h(hours))                                                          ! K, surface temperature
         allocate(all_wtd_h(hours))                                                             ! m, Water table depth
         allocate(all_snd_h(hours))                                                             ! m, Total snow depth
-        allocate(all_lai_h(hours))                                                             ! m2 m-2, Leaf area index
+        allocate(all_lai_h(hours))  
+        allocate(all_gdd5_h(hours))                                                           ! m2 m-2, Leaf area index
 
         ! daily: 
         ! ---------------------------------------------------------------------
@@ -1352,7 +1362,8 @@ module mod_data
         deallocate(all_tsland_h)                                                          ! K, surface temperature
         deallocate(all_wtd_h)                                                             ! m, Water table depth
         deallocate(all_snd_h)                                                             ! m, Total snow depth
-        deallocate(all_lai_h)                                                             ! m2 m-2, Leaf area index
+        deallocate(all_lai_h)       
+        deallocate(all_gdd5_h)                                                      ! m2 m-2, Leaf area index
 
         ! daily: 
         ! ---------------------------------------------------------------------

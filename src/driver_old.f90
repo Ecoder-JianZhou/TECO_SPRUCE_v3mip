@@ -24,9 +24,6 @@ module driver
         real    INTh,ROh,DRAINh,LEh,SHh                         ! 
         real    VPDh, LWH
         real    esat1 
-        integer aaatest
-
-        aaatest = 0
 
         ! Jian: start the cycle of the forcing data
         first_year  = forcing%year(1)
@@ -43,24 +40,14 @@ module driver
             iday  = forcing%doy(iforcing)                    
             ihour = forcing%hour(iforcing)
             ! if it is a new year
-            
-            if (iyear > year0) then                             ! a new year loop 
-                aaatest = aaatest + 1
+            if (iyear > year0) then                             ! a new year loop    
                 call init_year()                                ! initilization the variables of a year
-                if ((iday .eq. 1) .and. (ihour .eq. 0)) call init_update_year()
             endif
-            
-
             ! leap year
-            if (do_leap) then
-                if(iday .eq. 1) call isLeap_update_daysOfyear()
-            else
-                daysOfyear = 365
-            endif
+            call isLeap_update_daysOfyear()
 
             ! for update the results of monthly and yearly
-            call update_hoursOfYear_daysOfmonth_initMonthly()
-            ! call update_summary_init_monthly()
+            call update_summary_init_monthly()
 
             ! initialize the daily variables to run hourly simulaiton.
             if (ihour .eq. 0) then
@@ -76,9 +63,6 @@ module driver
                 StemSap = AMIN1(Stemmax,SapS*bmStem)            ! Stemmax and SapS were input from parameter file, what are they? Unit? Maximum stem biomass? -JJJJJJJJJJJJJJJJJJJJJJ 
                 RootSap = AMIN1(Rootmax,SapR*bmRoot)
                 NSCmax  = 0.05*(StemSap+RootSap+QC(1))          ! Jian: update the NSCmax each step? and fixed NSCmin  = 5.? 
-                ! if (GDD5 .ne. 0.) write(*,*)"GDD: ",iforcing, GDD5
-                ! if (onset .eq. 1) write(*,*)"GDD: ",iforcing, GDD5
-                ! write(*,*) aaatest
                 if(Ta.gt.5.0) GDD5 = GDD5+Ta
                 call init_day()                                 ! Jian: initilize the daily data.
             endif
@@ -167,6 +151,55 @@ module driver
                 NSN    = NSN    - NSC/CN(2)
                 NSC    = 0.
             endif
+            GL_d    = GL_d + NPP*alpha_L
+            GW_d    = GW_d + NPP*alpha_W
+            GR_d    = GR_d + NPP*alpha_R
+            LFALL_d = LFALL_d + L_fall
+            ! update
+            RaLeaf  = RgLeaf + RmLeaf
+            RaStem  = RgStem + RmStem
+            RaRoot  = RgRoot + RmRoot + Rnitrogen
+            WFALL_d = WFALL_d+ OutC(2) !_wood
+            RFALL_d = RFALL_d+ OutC(3) !_root
+            N_LG_d  = N_LG_d + N_leaf
+            N_WG_d  = N_WG_d + N_wood
+            N_RG_d  = N_RG_d + N_root
+            N_LF_d  = N_LF_d + N_LF
+            N_WF_d  = N_WF_d + N_WF
+            N_RF_d  = N_RF_d + N_RF
+
+            N_up_d    = N_up_d  + N_uptake
+            N_fix_d   = N_fix_d + N_fixation
+            N_dep_d   = N_dep_d + N_deposit
+            N_leach_d = N_leach_d + N_leach
+            N_vol_d   = N_vol_d + N_vol
+
+            N_up_yr    = N_up_yr+N_uptake
+            N_fix_yr   = N_fix_yr+N_fixation
+            N_dep_yr   = N_dep_yr+N_deposit
+            N_leach_yr = N_leach_yr+N_leach
+            N_vol_yr   = N_vol_yr+N_vol
+
+            R_Ntr_yr   = R_Ntr_yr + Rnitrogen
+
+            ! *** ..int 
+            do dlayer=1,10
+                ice_d_simu(dlayer) = ice_d_simu(dlayer)+ice(dlayer) 
+            enddo       
+            do dlayer=1,11
+                soilt_d_simu(dlayer) = soilt_d_simu(dlayer)+testout(dlayer)  
+                ! first = surface soil temperature 2:11=1:10 layer soil temperatures 
+            enddo                    
+            do dlayer=1,10
+                CH4V_d(dlayer) = CH4V_d(dlayer) + CH4_V(dlayer) 
+            enddo                  
+            zwt_d=zwt_d+zwt    ! ..int I doubt it... mean for zwt?     check later  Shuang 
+            !   *** 
+            ! ==================== test variables
+            topfws_yr = topfws_yr + topfws/8760.
+            omega_yr  = omega_yr  + omega/8760.
+            fwsoil_yr = fwsoil_yr + fwsoil/8760.
+            omega_d   = omega_d   + omega/24.
 
             ! Rhetero=Rh_f + Rh_c + Rh_Micr + Rh_Slow + Rh_Pass
             Rhetero = Rh_pools(1) + Rh_pools(2) + Rh_pools(3) &
@@ -196,11 +229,87 @@ module driver
 
             call updateHourly()
             call summaryHourly(iTotHourly)
+            !  Write(*,*)"TEST_ALL_:", wetlandCH4_h(iTotHourly-1,:)
+            ! sums of a day
+            diff_d   = diff_d   + difference
+            gpp_d_old    = gpp_d_old    + GPP
+            gpp_ra   = gpp_ra   + Rauto
+            npp_d_old    = npp_d_old    + NPP
+            NEP_d    = NEP_d    + NEP
+            NEE_d    = NEE_d    + NEE
+            RECO_d   = RECO_d   + Recoh
+            rh_d_old     = rh_d_old     + Rhetero
+            ra_d_old     = Reco_d   - rh_d_old
+            mat_Rh_d = mat_Rh_d + mat_Rh                        ! Jian: add for matrix form
+            RLEAV_d  = RLEAV_d  + RmLeaf + RgLeaf
+            RWOOD_d  = RWOOD_d  + RmStem + RgStem
+            RROOT_d  = RROOT_d  + RmRoot + RgRoot + Rnitrogen
+            Rsoil_d  = rh_d_old     + RROOT_d
+            NUP_d    = NUP_d    + N_uptake
+            NVOL_d   = NVOL_d   + N_vol
+            NLEACH_d = NLEACH_d + N_leach
+            transp_d = transp_d + transp*(24./dtimes)
+            evap_d   = evap_d   + evap*(24./dtimes)
+            ET_d     = transp_d + evap_d
+            LE_d     = LE_d     + LEh/24.
+            Hcanop_d = Hcanop_d + Hcanop/(24./dtimes)
+            runoff_d = runoff_d + runoff
+            ! added for MEMCMC also for generation of daily methane emission                  
+            simuCH4_d = simuCH4_d + simuCH4
+            Pro_sum_d = Pro_sum_d + Pro_sum
+            Oxi_sum_d = Oxi_sum_d + Oxi_sum
+            Fdifu1_d  = Fdifu1_d  + Fdifu(1)
+            Ebu_sum_d = Ebu_sum_d + Ebu_sum
+            Pla_sum_d = Pla_sum_d + Pla_sum
+
             call updateDaily()
+           
             call updateMonthly(hoursOfmonth)
 
-            call updateYearly(hoursOfYear)
+            ! sum of the whole year
+            diff_yr = diff_yr + difference
+            gpp_yr  = gpp_yr  + gpp
+            NPP_yr  = NPP_yr  + NPP
+            Rh_yr   = Rh_yr   + Rhetero
+            Ra_yr   = Ra_yr   + Rauto
+            Rh4_yr  = Rh4_yr  + Rh_pools(1)
+            Rh5_yr  = Rh5_yr  + Rh_pools(2)
+            Rh6_yr  = Rh6_yr  + Rh_pools(3)
+            Rh7_yr  = Rh7_yr  + Rh_pools(4)
+            Rh8_yr  = Rh8_yr  + Rh_pools(5)
+            Pool1   = Pool1   + QC(1)/8760.
+            Pool2   = Pool2   + QC(2)/8760.
+            Pool3   = Pool3   + QC(3)/8760.
+            Pool4   = Pool4   + QC(4)/8760.
+            Pool5   = Pool5   + QC(5)/8760.
+            Pool6   = Pool6   + QC(6)/8760.
+            Pool7   = Pool7   + QC(7)/8760.
+            Pool8   = Pool8   + QC(8)/8760.
+            out1_yr = out1_yr + OutC(1)
+            out2_yr = out2_yr + OutC(2)
+            out3_yr = out3_yr + OutC(3)
+            out4_yr = out4_yr + OutC(4)
+            out5_yr = out5_yr + OutC(5)
+            out6_yr = out6_yr + OutC(6)
+            out7_yr = out7_yr + OutC(7)
+            out8_yr = out8_yr + OutC(8)
+            NEE_yr  = NEE_yr  + NEE
+            GL_yr   = GL_yr   + NPP*alpha_L
+            GW_yr   = GW_yr   + NPP*alpha_W
+            GR_yr   = GR_yr   + NPP*alpha_R
 
+            ! call updateYearly(hoursOfYear)
+
+            ! ! added for soil thermal      unknown function check later   Shuang
+            ! if((yr+first_year-1).eq.obs_soilwater(1,k1) .and.    &
+            !     &     days .eq. obs_soilwater(2,k1) .and.      &
+            !     &     (i-1).eq. obs_soilwater(3,k1))then
+            !     Simu_soilwater(1:10,k1)=wcl(1:10)
+            !     Simu_soiltemp(1:11,k1)=testout
+            !     Simu_watertable(1,k1)=zwt
+            !     k1=k1+1
+            ! endif
+            ! enddo              ! end of dtimes ! Jian: mark for end of dtimes in original model.
             if(ihour .eq. 23) then
                 if((GDD5.gt.gddonset) .and. phenoset.eq.0) then
                     pheno    = iday    ! pheno=days
@@ -277,23 +386,21 @@ module driver
                 ! record_yr(i_record) = iyear
                 i_record = i_record+1
             end if
-            call update_summary_monthly()
-            ! if ((iyear > year0) .or. ((year0 .eq. first_year) .and. (iday .eq.1))) then 
-                 
+            ! if ((iyear > year0) .or. ((year0 .eq. first_year) .and. (iday .eq.1))) then      
             if (iforcing < nforcing)then
                 if (forcing%year(iforcing+1)>iyear) then            
-                    year0 = iyear                                   ! update the record of year (year0)
+                    year0        = iyear                                     ! update the record of year (year0)
                     storage      = accumulation
                     stor_use     = Storage/720.
                     accumulation = 0.0
-                    onset        = 0
+                    onset=0
                 endif
             else
                 year0        = iyear                                     ! update the record of year (year0)
                 storage      = accumulation
                 stor_use     = Storage/720.
                 accumulation = 0.0
-                onset        = 0
+                onset=0
             endif
         enddo
     end subroutine teco_simu
@@ -315,92 +422,111 @@ module driver
         endif
     end subroutine isLeap_update_daysOfyear
 
-    subroutine update_hoursOfYear_daysOfmonth_initMonthly()
+    subroutine update_summary_init_monthly()
         implicit none
         if (daysOfyear .eq. 365) then ! common year
             hoursOfYear = 365*24
             daysOfmonth = (/31,59,90,120,151,181,212,243,273,304,334,365/)
+            if((iday .eq. 365) .and. (ihour .eq. 23))  call summaryMonthly(iTotMonthly)
         else
             hoursOfYear = 366*24
             daysOfmonth = (/31,60,91,121,152,182,213,244,274,305,335,366/)
+            if((iday .eq. 366) .and. (ihour .eq. 23)) call summaryMonthly(iTotMonthly)
         endif
-        ! hours of month
-        ! January:
-        if (iday .eq. 1)then 
-            hoursOfmonth = (daysOfmonth(1)-0)*24
-            if (ihour .eq. 0) call init_monthly()
-        endif
-        ! Feburay:
-        if (iday .eq. daysOfmonth(1)+1)then
-            hoursOfmonth = (daysOfmonth(2)-daysOfmonth(1))*24
-            if (ihour .eq. 0) call init_monthly()
-        endif
-        ! March
-        if (iday .eq. daysOfmonth(2)+1)then
-            hoursOfmonth = (daysOfmonth(3)-daysOfmonth(2))*24
-            if (ihour .eq. 0) call init_monthly()
-        endif
-        ! April
-        if (iday .eq. daysOfmonth(3)+1)then
-            hoursOfmonth = (daysOfmonth(4)-daysOfmonth(3))*24
-            if (ihour .eq. 0) call init_monthly()
-        endif
-        ! May
-        if (iday .eq. daysOfmonth(4)+1)then
-            hoursOfmonth = (daysOfmonth(5)-daysOfmonth(4))*24
-            if (ihour .eq. 0) call init_monthly()
-        endif
-        ! June
-        if (iday .eq. daysOfmonth(5)+1)then
-            hoursOfmonth = (daysOfmonth(6)-daysOfmonth(5))*24
-            if (ihour .eq. 0) call init_monthly()
-        endif
-        ! July
-        if(iday .eq. daysOfmonth(6)+1)then
-            hoursOfmonth = (daysOfmonth(7)-daysOfmonth(6))*24
-            if (ihour .eq. 0) call init_monthly()
-        endif
-        ! Auguest
-        if(iday .eq. daysOfmonth(7)+1)then
-            hoursOfmonth = (daysOfmonth(8)-daysOfmonth(7))*24
-            if (ihour .eq. 0) call init_monthly()
-        endif
-        ! Septemble
-        if(iday .eq. daysOfmonth(8)+1)then
-            hoursOfmonth = (daysOfmonth(9)-daysOfmonth(8))*24
-            if (ihour .eq. 0) call init_monthly()
-        endif
-        ! October
-        if(iday .eq. daysOfmonth(9)+1)then
-            hoursOfmonth = (daysOfmonth(10)-daysOfmonth(9))*24
-            if (ihour .eq. 0) call init_monthly()
-        endif
-        ! November
-        if(iday .eq. daysOfmonth(10)+1)then
-            hoursOfmonth = (daysOfmonth(11)-daysOfmonth(10))*24
-            if (ihour .eq. 0) call init_monthly()
-        endif
-        ! December
-        if(iday .eq. daysOfmonth(11)+1)then
-            hoursOfmonth = (daysOfmonth(12)-daysOfmonth(11))*24
-            if (ihour .eq. 0) call init_monthly()
-        endif
-    end subroutine update_hoursOfYear_daysOfmonth_initMonthly
 
-    subroutine update_summary_monthly()
-        implicit none
-        ! January
-        if ((iday .eq. daysOfmonth(1))  .and. (ihour .eq. 23)) call summaryMonthly(iTotMonthly)
-        if ((iday .eq. daysOfmonth(2))  .and. (ihour .eq. 23)) call summaryMonthly(iTotMonthly)
-        if ((iday .eq. daysOfmonth(3))  .and. (ihour .eq. 23)) call summaryMonthly(iTotMonthly)
-        if ((iday .eq. daysOfmonth(4))  .and. (ihour .eq. 23)) call summaryMonthly(iTotMonthly)
-        if ((iday .eq. daysOfmonth(5))  .and. (ihour .eq. 23)) call summaryMonthly(iTotMonthly)
-        if ((iday .eq. daysOfmonth(6))  .and. (ihour .eq. 23)) call summaryMonthly(iTotMonthly)
-        if ((iday .eq. daysOfmonth(7))  .and. (ihour .eq. 23)) call summaryMonthly(iTotMonthly)
-        if ((iday .eq. daysOfmonth(8))  .and. (ihour .eq. 23)) call summaryMonthly(iTotMonthly)
-        if ((iday .eq. daysOfmonth(9))  .and. (ihour .eq. 23)) call summaryMonthly(iTotMonthly)
-        if ((iday .eq. daysOfmonth(10)) .and. (ihour .eq. 23)) call summaryMonthly(iTotMonthly)
-        if ((iday .eq. daysOfmonth(11)) .and. (ihour .eq. 23)) call summaryMonthly(iTotMonthly)
-        if ((iday .eq. daysOfmonth(12)) .and. (ihour .eq. 23)) call summaryMonthly(iTotMonthly)
-    end subroutine update_summary_monthly
+        ! select case (iday)
+        if (iday .eq. 1) then
+            ! case (1)  ! first day of Jan.
+                hoursOfmonth = (daysOfmonth(1)-0)*24
+                if (ihour .eq. 0) call init_monthly()
+        endif
+        if (iday .eq. daysOfmonth(1)+1)then
+            ! case (daysOfmonth(1)+1)
+                hoursOfmonth = (daysOfmonth(2)-daysOfmonth(1))*24
+                if (ihour .eq. 0) then
+                    call summaryMonthly(iTotMonthly)
+                    call init_monthly()
+                endif
+        endif
+        if (iday .eq. daysOfmonth(2)+1)then
+            ! case (daysOfmonth(2)+1)
+                hoursOfmonth = (daysOfmonth(3)-daysOfmonth(2))*24
+                if (ihour .eq. 0) then
+                    call summaryMonthly(iTotMonthly)
+                    call init_monthly()
+                endif
+        endif
+        if (iday .eq. daysOfmonth(3)+1)then
+            ! case (daysOfmonth(3)+1)
+                hoursOfmonth = (daysOfmonth(4)-daysOfmonth(3))*24
+                if (ihour .eq. 0) then
+                    call summaryMonthly(iTotMonthly)
+                    call init_monthly()
+                endif
+        ENDIF
+        if (iday .eq. daysOfmonth(4)+1)then
+            ! case (daysOfmonth(4)+1)
+                hoursOfmonth = (daysOfmonth(5)-daysOfmonth(4))*24
+                if (ihour .eq. 0) then
+                    call summaryMonthly(iTotMonthly)
+                    call init_monthly()
+                endif
+        endif
+        if (iday .eq. daysOfmonth(5)+1)then
+            ! case (daysOfmonth(5)+1)
+                hoursOfmonth = (daysOfmonth(6)-daysOfmonth(5))*24
+                if (ihour .eq. 0) then
+                    call summaryMonthly(iTotMonthly)
+                    call init_monthly()
+                endif
+        endif
+        if(iday .eq. daysOfmonth(6)+1)then
+            ! case (daysOfmonth(6)+1)
+                hoursOfmonth = (daysOfmonth(7)-daysOfmonth(6))*24
+                if (ihour .eq. 0) then
+                    call summaryMonthly(iTotMonthly)
+                    call init_monthly()
+                endif
+        endif
+        if(iday .eq. daysOfmonth(7)+1)then
+            ! case (daysOfmonth(7)+1)
+                hoursOfmonth = (daysOfmonth(8)-daysOfmonth(7))*24
+                if (ihour .eq. 0) then
+                    call summaryMonthly(iTotMonthly)
+                    call init_monthly()
+                endif
+        endif
+        if(iday .eq. daysOfmonth(8)+1)then
+            ! case (daysOfmonth(8)+1)
+                hoursOfmonth = (daysOfmonth(9)-daysOfmonth(8))*24
+                if (ihour .eq. 0) then
+                    call summaryMonthly(iTotMonthly)
+                    call init_monthly()
+                endif
+        endif
+        if(iday .eq. daysOfmonth(9)+1)then
+            ! case (daysOfmonth(9)+1)
+                hoursOfmonth = (daysOfmonth(10)-daysOfmonth(9))*24
+                if (ihour .eq. 0) then
+                    call summaryMonthly(iTotMonthly)
+                    call init_monthly()
+                endif
+        endif
+        if(iday .eq. daysOfmonth(10)+1)then
+            ! case (daysOfmonth(10)+1)
+                hoursOfmonth = (daysOfmonth(11)-daysOfmonth(10))*24
+                if (ihour .eq. 0) then
+                    call summaryMonthly(iTotMonthly)
+                    call init_monthly()
+                endif
+        endif
+        if(iday .eq. daysOfmonth(11)+1)then
+            ! case (daysOfmonth(11)+1)
+                hoursOfmonth = (daysOfmonth(12)-daysOfmonth(11))*24
+                if (ihour .eq. 0) then
+                    call summaryMonthly(iTotMonthly)
+                    call init_monthly()
+                endif
+        endif
+    end subroutine update_summary_init_monthly
 end module driver
