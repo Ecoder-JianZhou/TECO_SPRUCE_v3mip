@@ -43,13 +43,26 @@ module driver
             iday  = forcing%doy(iforcing)                    
             ihour = forcing%hour(iforcing)
             ! if it is a new year
-            
-            if (iyear > year0) then                             ! a new year loop 
-                aaatest = aaatest + 1
-                call init_year()                                ! initilization the variables of a year
-                if ((iday .eq. 1) .and. (ihour .eq. 0)) call init_update_year()
+
+            if ((iday .eq. 1) .and. (ihour .eq. 0)) call init_update_year()
+            if (do_simu .and. (iday .eq. 1) .and. (ihour .eq. 0)) write(*,*)iyear
+            if ((iyear .eq. 1974) .and. (iday .eq. 1) .and. (ihour .eq. 0))then
+                ! 1974 remove 99% of tree biomass
+                QC(1)    = 0.1 * QC(1)
+                QC(2)    = 0.1 * QC(2)
+                QC(3)    = 0.1 * QC(3)
+                QN(1)    = 0.1 * QN(1)
+                QN(2)    = 0.1 * QN(2)
+                QN(3)    = 0.1 * QN(3)
+                bmleaf   = 0.1 * bmleaf
+                bmstem   = 0.1 * bmstem
+                bmroot   = 0.1 * bmroot
+                nsc      = 0.1 * nsc
+                nsn      = 0.1 * nsn
+                storage  = 0.1 * storage
+                lai      = LAIMIN!0.1 * lai
+                stor_use = 0.1 * stor_use
             endif
-            
 
             ! leap year
             if (do_leap) then
@@ -82,6 +95,7 @@ module driver
                 if(Ta.gt.5.0) GDD5 = GDD5+Ta
                 call init_day()                                 ! Jian: initilize the daily data.
             endif
+            ! if ((itest .eq.1) .and. (iforcing .eq. 180)) stop
 
             ! forcing data --------------------------------------------------------------------------------
             Tair  = forcing%Tair(iforcing)                      ! Tair
@@ -163,7 +177,7 @@ module driver
             Difference = GPP - Rauto - NPP
             if(NSC<0)then
                 bmstem = bmstem + NSC/0.48
-                NPP    = NPP    + NSC
+                NPP    = Amax1(NPP + NSC, 0.) 
                 NSN    = NSN    - NSC/CN(2)
                 NSC    = 0.
             endif
@@ -278,20 +292,19 @@ module driver
                 i_record = i_record+1
             end if
             call update_summary_monthly()
-            ! if ((iyear > year0) .or. ((year0 .eq. first_year) .and. (iday .eq.1))) then 
                  
             if (iforcing < nforcing)then
                 if (forcing%year(iforcing+1)>iyear) then            
                     year0 = iyear                                   ! update the record of year (year0)
                     storage      = accumulation
-                    stor_use     = Storage/720.
+                    stor_use     = Storage/times_storage_use
                     accumulation = 0.0
                     onset        = 0
                 endif
             else
                 year0        = iyear                                     ! update the record of year (year0)
                 storage      = accumulation
-                stor_use     = Storage/720.
+                stor_use     = Storage/times_storage_use
                 accumulation = 0.0
                 onset        = 0
             endif
@@ -301,8 +314,8 @@ module driver
     subroutine isLeap_update_daysOfyear()    
         implicit none
         if (MOD(iyear, 4) .eq. 0)then
-            if (MOD(iyear, 100) .eq. 100)then
-                if (MOD(iyear, 400) .eq. 400)then
+            if (MOD(iyear, 100) .eq. 0)then
+                if (MOD(iyear, 400) .eq. 0)then
                     daysOfyear = 366
                 else
                     daysOfyear = 365

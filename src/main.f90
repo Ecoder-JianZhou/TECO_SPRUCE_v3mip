@@ -9,6 +9,7 @@ program TECO
     ! character(len=32) :: cmdChar_folder, out_csv, out_nc, out_nc_daily, out_nc_hourly, out_nc_monthly
     character(len=1000) :: outDir_nc, outfile 
     
+    call CreateFolder(adjustl(trim(outdir)))
     outDir_nc     = adjustl(trim(outdir))//"/outputs_nc"
     outDir_csv    = adjustl(trim(outdir))//"/outputs_csv"
     outDir_h      = adjustl(trim(outDir_nc))//"/Hourly"

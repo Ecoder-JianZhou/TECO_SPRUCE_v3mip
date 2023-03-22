@@ -178,6 +178,11 @@ module mod_ncd_io
         ! Hourly lai_h
         call write_nc(outDir_h,nHours,all_lai_h,"lai","m2 m-2", "Leaf area index","hourly",1)
         call write_nc(outDir_h,nHours,all_gdd5_h,"GDD5","m2 m-2", "GDD5","hourly",1)
+        call write_nc(outDir_h,nHours,all_onset_h,"onset","m2 m-2", "onset","hourly",1)
+        call write_nc(outDir_h,nHours,all_storage_h,"storage","m2 m-2", "onset","hourly",1)
+        call write_nc(outDir_h,nHours,all_add_h,"add","m2 m-2", "onset","hourly",1)
+        call write_nc(outDir_h,nHours,all_accumulation_h,"accumulation","m2 m-2", "accumulation","hourly",1)
+        call write_nc(outDir_h,nHours,all_test_h,"test_gpp","m2 m-2", "test_gpp","hourly",9)
 
 
 
@@ -886,7 +891,7 @@ module mod_ncd_io
     ! ----------------------------------------------
     subroutine write_spinup_res()
         implicit none
-        integer(KIND=4) :: ncid, dimid_nloops, dimid_nlayer
+        integer(KIND=4) :: ncid, dimid_nloops, dimid_nlayer,dimid_ntest
         integer(kind=4) :: id_sp_gpp
         integer(kind=4) :: id_sp_npp
         integer(kind=4) :: id_sp_ra
@@ -916,6 +921,7 @@ module mod_ncd_io
         integer(kind=4) :: id_sp_nLeaf
         integer(kind=4) :: id_sp_nStem
         integer(kind=4) :: id_sp_nRoot
+        integer(kind=4) :: id_sp_nOther
         integer(kind=4) :: id_sp_nLitter
         integer(kind=4) :: id_sp_nLitterCwd
         integer(kind=4) :: id_sp_nSoil
@@ -931,12 +937,15 @@ module mod_ncd_io
         integer(kind=4) :: id_sp_mrro
         integer(kind=4) :: id_sp_mrros
         integer(kind=4) :: id_sp_mrrob
+        integer(kind=4) :: id_sp_lai
+        integer(kind=4) :: id_test
 
         !Create the netCDF file.
         CALL check(nf90_create(outFile_sp, NF90_CLOBBER, ncid))
         !Define the dimensions.
         CALL check(nf90_def_dim(ncid, "time",     nloops, dimid_nloops))
         call check(nf90_def_dim(ncid, "n_layers", nlayers, dimid_nlayer))
+        call check(nf90_def_dim(ncid, "n_Test",   9, dimid_ntest))
         ! Define the variables
 
         CALL check(nf90_def_var(ncid, "gpp",            NF90_FLOAT, dimid_nloops, id_sp_gpp))
@@ -968,6 +977,7 @@ module mod_ncd_io
         CALL check(nf90_def_var(ncid, "nLeaf",          NF90_FLOAT, dimid_nloops, id_sp_nLeaf))
         CALL check(nf90_def_var(ncid, "nStem",          NF90_FLOAT, dimid_nloops, id_sp_nStem))
         CALL check(nf90_def_var(ncid, "nRoot",          NF90_FLOAT, dimid_nloops, id_sp_nRoot))
+        CALL check(nf90_def_var(ncid, "nOther",         NF90_FLOAT, dimid_nloops, id_sp_nOther))
         CALL check(nf90_def_var(ncid, "nLitter",        NF90_FLOAT, dimid_nloops, id_sp_nLitter))
         CALL check(nf90_def_var(ncid, "nLitterCwd",     NF90_FLOAT, dimid_nloops, id_sp_nLitterCwd))
         CALL check(nf90_def_var(ncid, "nSoil",          NF90_FLOAT, dimid_nloops, id_sp_nSoil))
@@ -983,6 +993,8 @@ module mod_ncd_io
         CALL check(nf90_def_var(ncid, "mrro",           NF90_FLOAT, dimid_nloops, id_sp_mrro))
         CALL check(nf90_def_var(ncid, "mrros",          NF90_FLOAT, dimid_nloops, id_sp_mrros))
         CALL check(nf90_def_var(ncid, "mrrob",          NF90_FLOAT, dimid_nloops, id_sp_mrrob))
+        CALL check(nf90_def_var(ncid, "lai",            NF90_FLOAT, dimid_nloops, id_sp_lai))
+        CALL check(nf90_def_var(ncid, "test",           NF90_FLOAT, (/dimid_nloops,dimid_ntest/), id_test))
 
         CALL check(nf90_enddef(ncid)) !End Definitions
 
@@ -1015,6 +1027,7 @@ module mod_ncd_io
         CALL check(nf90_put_var(ncid, id_sp_nLeaf,          sp_nLeaf_y))
         CALL check(nf90_put_var(ncid, id_sp_nStem,          sp_nStem_y))
         CALL check(nf90_put_var(ncid, id_sp_nRoot,          sp_nRoot_y))
+        CALL check(nf90_put_var(ncid, id_sp_nOther,         sp_nOther_y))
         CALL check(nf90_put_var(ncid, id_sp_nLitter,        sp_nLitter_y))
         CALL check(nf90_put_var(ncid, id_sp_nLitterCwd,     sp_nLitterCwd_y))
         CALL check(nf90_put_var(ncid, id_sp_nSoil,          sp_nSoil_y))
@@ -1030,6 +1043,8 @@ module mod_ncd_io
         CALL check(nf90_put_var(ncid, id_sp_mrro,           sp_mrro_y))
         CALL check(nf90_put_var(ncid, id_sp_mrros,          sp_mrros_y))
         CALL check(nf90_put_var(ncid, id_sp_mrrob,          sp_mrrob_y))
+        CALL check(nf90_put_var(ncid, id_sp_lai,            sp_lai_y))
+        CALL check(nf90_put_var(ncid, id_test,              sp_test_y))
         ! endif
         CALL check(nf90_close(ncid))
     end subroutine write_spinup_res

@@ -81,6 +81,7 @@ contains
       implicit none
       real conv 
       conv = 3600.*12./1000000.                  ! converter from "umol C /m2/s" to "gC/m2/hour"
+      ! SNRauto =exp(-(CN(1)-CN0(1))/CN0(1))
       if (LAI .gt. LAIMIN) then
          RmLeaf = Rl0*SNRauto*bmleaf*0.48*SLA*0.1*Q10**((Tair - 10.)/10.)*fnsc*conv
          RmStem = Rs0*SNRauto*StemSap*0.001*Q10**((Tair - 25.)/10.)*fnsc*conv
@@ -153,15 +154,16 @@ contains
          onset = 1
       end if
       if ((onset .eq. 1) .and. (storage .gt. stor_use)) then
-         if (LAI .lt. LAIMAX) add = stor_use
+         if (LAI .lt. LAIMAX) add = stor_use!Amin1(stor_use, 0.004*NSN*CNp0)
          ! if(LAI.lt.LAIMAX)add=stor_use/20.0
          storage = storage - add
+         ! add = 0
       else
          add = 0.0
          onset = 0
       end if
-      if (accumulation .lt. (NSCmax + 0.005*RootSap)) then
-         store = AMAX1(0., 0.005*NSC)                        ! 0.5% of nonstructure carbon is stored
+      if (accumulation .lt. (NSCmax + 0.001*RootSap)) then
+         store = AMAX1(0., 0.0001*NSC)                        ! 0.5% of nonstructure carbon is stored
       else
          store = 0.0
       end if
@@ -183,9 +185,10 @@ contains
 
       ! Plant growth and allocation, based on LM3V
       GPmax   = (GLmax*bmL + GSmax*StemSap + GRmax*bmR)                        !/acP
-      GrowthP = AMIN1(GPmax*fnsc*St*(1.-exp(-NSN)),0.004*NSC,0.004*NSN*CNp0)   ! Jian: GrowthP is used to calculate NPP, which means the minimum of group plant needs and 0.004*NSC, 0.004*NSN*CNp0
+      ! Jian: limit the Growth > 0
+      GrowthP = Amax1(AMIN1(GPmax*fnsc*St*(1.-exp(-NSN)),0.004*NSC,0.004*NSN*CNp0), 0.) !    ! Jian: GrowthP is used to calculate NPP, which means the minimum of group plant needs and 0.004*NSC, 0.004*NSN*CNp0
       GrowthL = MAX(0.0, GrowthP*0.5)                                          ! updated when QC leaf and wood changed due to the change of plot area for tree biomass
-      GrowthR = MIN(GrowthP*0.4, MAX(0.0, 0.75/Sw*bmL - bmR))                  ! *c1/(1.+c1+c2)
+      GrowthR = Amax1(MIN(GrowthP*0.4, MAX(0.0, 0.75/Sw*bmL - bmR)), 0.)                  ! *c1/(1.+c1+c2)
       GrowthS = MAX(0.0, GrowthP - (GrowthL + GrowthR))                        ! *c2/(1.+c1+c2)
 
       NPP         = GrowthL + GrowthR + GrowthS + add       ! Modified by Jiang Jiang 2015/10/13
@@ -193,6 +196,9 @@ contains
       GrowthLaccu = GrowthLaccu + GrowthL
       GrowthRaccu = GrowthRaccu + GrowthR
       GrowthSaccu = GrowthSaccu + GrowthS
+      ! test_gpp = (/GrowthL,GrowthR,GrowthS,add,0.,0.,0.,0.,0./)
+      test_gpp = (/GPmax*fnsc*St*(1.-exp(-NSN)),0.004*NSC,0.004*NSN*CNp0,GPmax,fnsc,nsn,CNP0,GLmax,bmL/)
+      ! test_gpp = (/GPmax*fnsc*St*(1.-exp(-NSN)),0.004*NSC,0.004*NSN*CNp0,GPmax,fnsc,QC(1),bmleaf,bmleaf*0.48,bmL/)
       
       if (NPP .eq. 0.0) then
          alpha_L = 0.333
@@ -382,6 +388,8 @@ contains
          Vcmxx = Vcmx0*scalex                         ! Vcmx0 ---> Vcmax0
          ! write(*,*)"test Vcmxx0: ", Vcmax0, scalex, Vcmax0*scalex
          ! write(*,*)"test Vcmxx: ", Vcmx0, scalex, extkn,flai, Vcmxx
+         ! test_gpp =(/Vcmx0, scalex,extkn,flai, eJmx0,SNvcmax,FLAIT,transd,0./)
+
          eJmxx = eJmx0*scalex
          if (radabv(1) .ge. 10.0) then                          !check solar Radiation > 10 W/m2
             ! leaf stomata-photosynthesis-transpiration model - daytime
@@ -433,6 +441,7 @@ contains
          ! write(*,*)"test Acan1:", Vcmxx, Tlk, -0.0089*Vcmxx*exp(0.069*(Tlk - 293.2)), Tair
          ! write(*,*)"test Teaf1: ",iforcing,gpp, Acan1, Acan2, fshd, fslt, Aleaf, Gaussw(ng), flait, stom_n,Vcmxx,Tlk,extKb,flai
          ! endif
+         ! test_gpp(ng,:) = (/Acan1, Acan2, fshd, fslt, Aleaf, Gaussw(ng), flait, stom_n,Vcmxx,Tlk,extKb,flai/)
       end do  ! 5 layers
 
       FLAIT1 = (1.0 - exp(-extKb*FLAIT))/extkb
@@ -858,6 +867,9 @@ contains
       !       ! eJmx0*scalex,
       !    endif 
       ! endif
+      ! test_gpp = (/Aleafx,Gma, Bta, gsc0, X, Rd, co2Csx, gammas, Aqx/)
+      ! test_gpp = (/Aleafx, VcmxT, co2cs, ej,weighJ,fJQres(eJmxT, alpha, Qapar, theta),eJmxT, Qapar, theta/)
+      ! test_gpp = (/Tlf, TminV, TmaxV, ToptV, Vcmxx,TminJ, TmaxJ, ToptJ, eJmxx/)
       return
    end subroutine photosyn
 

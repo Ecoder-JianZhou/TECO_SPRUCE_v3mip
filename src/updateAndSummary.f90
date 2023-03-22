@@ -45,10 +45,14 @@ module mod_upAndSum
         cCH4_h            = CH4*convert_g2kg                        ! methane concentration
         ! Nitrogen fluxes (kgN m-2 s-1)
         fBNF_h            = N_fixation*convert_g2kg*convert_h2s                 ! fBNF: biological nitrogen fixation;
-        fN2O_h            = N_miner*convert_g2kg*convert_h2s                    ! fN2O: loss of nitrogen through emission of N2O;
-        fNloss_h          = N_loss*convert_g2kg*convert_h2s                     ! fNloss:Total loss of nitrogen to the atmosphere and from leaching;
-        fNnetmin_h        = fNnetmin*convert_g2kg*convert_h2s                   ! net mineralizaiton
-        fNdep_h           = N_deposit*convert_g2kg*convert_h2s                  ! deposition of N
+        ! fN2O_h            = N_miner*convert_g2kg*convert_h2s                    ! fN2O: loss of nitrogen through emission of N2O;
+        ! fNloss_h          = N_loss*convert_g2kg*convert_h2s                     ! fNloss:Total loss of nitrogen to the atmosphere and from leaching;
+        ! fNnetmin_h        = fNnetmin*convert_g2kg*convert_h2s                   ! net mineralizaiton
+        ! fNdep_h           = N_deposit*convert_g2kg*convert_h2s                  ! deposition of N
+        fN2O_h            = (N_transfer+N_uptake+N_fixation)*convert_g2kg*convert_h2s                    ! fN2O: loss of nitrogen through emission of N2O;
+        fNloss_h          = (N_leaf+N_wood+N_root)*convert_g2kg*convert_h2s                     ! fNloss:Total loss of nitrogen to the atmosphere and from leaching;
+        fNnetmin_h        = ((N_transfer+N_uptake+N_fixation)-(N_leaf+N_wood+N_root))*convert_g2kg*convert_h2s                   ! net mineralizaiton
+        fNdep_h           = N_wood*convert_g2kg*convert_h2s                  ! deposition of N
         ! Nitrogen pools (kgN m-2)
         nLeaf_h           = QN(1)*convert_g2kg
         nStem_h           = QN(2)*convert_g2kg
@@ -64,12 +68,12 @@ module mod_upAndSum
         SWnet_h           = 0 ! Net shortwave radiation;
         LWnet_h           = 0 ! Net longwave radiation
         ! water fluxes (kg m-2 s-1)
-        ec_h              = evap*convert_g2kg*convert_h2s        ! Canopy evaporation;
+        ec_h              = 0!evap*convert_g2kg*convert_h2s        ! Canopy evaporation;
         tran_h            = transp*convert_g2kg*convert_h2s      ! Canopy transpiration;
-        es_h              = 0 ! Soil evaporation
+        es_h              = evap*convert_g2kg*convert_h2s ! Soil evaporation
         hfsbl_h           = sublim*convert_g2kg*convert_h2s ! Snow sublimation
         mrro_h            = runoff*convert_g2kg*convert_h2s
-        mrros_h           = 0    
+        mrros_h           = forcing%Rain(iforcing)    
         mrrob_h           = 0 ! Total runoff; Surface runoff; Subsurface runoff
         ! other
         mrso_h            = liq_water*1000                                   ! Kg m-2, soil moisture in each soil layer
@@ -296,6 +300,13 @@ module mod_upAndSum
         mrros_y           = mrros_y          + mrros_h          /hoursOfYear
         mrrob_y           = mrrob_y          + mrrob_h          /hoursOfYear        ! Total runoff; Surface runoff; Subsurface runoff
         ! other
+        mrso_y            = mrso_y           + mrro_h           /hoursOfYear                  ! Kg m-2, soil moisture in each soil layer
+        tsl_y             = tsl_y            + tsl_h            /hoursOfYear                   ! K, soil temperature in each soil layer
+        tsland_y          = tsland_y         + tsland_h         /hoursOfYear                ! K, surface temperature
+        wtd_y             = wtd_y            + wtd_h            /hoursOfYear                   ! m, Water table depth
+        snd_y             = snd_y            + snd_h            /hoursOfYear                   ! m, Total snow depth
+        lai_y             = lai_y            + lai_h            /hoursOfYear
+        test_gpp_y        = test_gpp_y       + test_gpp         /hoursOfYear
 
         ! not used in SPRUCE-MIP
         rain_yr   = rain_yr   + rain
@@ -376,6 +387,12 @@ module mod_upAndSum
         all_snd_h(iTotHourly)            = snd_h                                                 ! m, Total snow depth
         all_lai_h(iTotHourly)            = lai_h                     ! m2 m-2, Leaf area index
         all_gdd5_h(iTotHourly)           = GDD5
+        all_onset_h(iTotHourly)           = onset
+        all_storage_h(iTotHourly)        = storage
+        all_add_h(iTotHourly)            = add
+        all_accumulation_h(iTotHourly)   = accumulation
+        ! all_test_h(5*(iTotHourly-1)+1:5*(iTotHourly),:) = test_gpp
+        all_test_h(iTotHourly,:) = test_gpp
 
         iTotHourly = iTotHourly+1
     end subroutine summaryHourly

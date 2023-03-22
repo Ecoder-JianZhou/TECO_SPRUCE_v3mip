@@ -20,7 +20,7 @@ module mod_transfer
         real CNmin,CNmax,NSNmax,NSNmin              !,NSN
         real CN_foliage
         real N_demand,N_immob,N_imm(5),Nfix0        ! ,N_deficit,N_fixation
-        real N_transfer!,N_loss                      ! ,N_miner,N_uptake,N_deposit,N_leach,N_vol
+        ! real N_transfer!,N_loss                      ! ,N_miner,N_uptake,N_deposit,N_leach,N_vol
         real Qroot0,Cfix0                           ! alphaN,
         real Scalar_N_flow,Scalar_N_T
         real ksye                                   ! NSC,fnsc,
@@ -169,21 +169,21 @@ module mod_transfer
         costCfix    = 0.
         costCreuse  = 0.
         ! 1. Nitrogen resorption
-        N_transfer  = (OutN(1) + OutN(2) +OutN(3))*alphaN
-        costCreuse  = Creuse0*N_transfer
+        N_transfer  = Amax1((OutN(1) + OutN(2) +OutN(3))*alphaN, 0.)
+        costCreuse  = Amax1(Creuse0*N_transfer, 0.)
         N_demand    = N_demand-N_transfer
         If(N_demand>0.0)then
         ! 2.  N uptake
             if(ksye/QNminer<Cfix0)then
-                N_uptake = AMIN1(N_demand+N_deficit,      &
-                      &    QNminer*QC(3)/(QC(3)+Qroot0), &
-                      &    Nup0*NSC/(ksye/QNminer))
-                costCuptake = N_uptake*(ksye/QNminer)
+                N_uptake = Amax1(AMIN1(N_demand+N_deficit,      &
+                        &    QNminer*QC(3)/(QC(3)+Qroot0), &
+                        &    Nup0*NSC/(ksye/QNminer)), 0.) 
+                costCuptake = Amax1(N_uptake*(ksye/QNminer),0.)
                 N_demand    = N_demand-N_uptake
             elseif(NSN<24.*30.*N_demand)then
         ! 3.  Nitrogen fixation
-                N_fixation  = Amin1(N_demand,fnsc*Nfix0*NSC)
-                costCfix    = Cfix0*N_fixation
+                N_fixation  = Amax1(Amin1(N_demand,fnsc*Nfix0*NSC), 0.)
+                costCfix    = Amax1(Cfix0*N_fixation,0.)
                 N_demand    = N_demand-N_fixation
             endif
         endif
@@ -285,6 +285,8 @@ module mod_transfer
     !     write(*,*)"N_leaf:",SNvcmax, NPP*alpha_L/CN(1)+QC(1)/CN0(1)-QC(1)/CN(1),0.2*NSN, NPP,alpha_L,CN(1),QC(1),CN0(1),NSN
     !     ! write(*,*)"NSN: ",NSN,N_leaf,N_leaf,N_wood,N_root,N_transfer,N_uptake,N_fixation
     !      endif 
+        ! test_gpp=(/SNvcmax, NPP*alpha_L/CN(1)+QC(1)/CN0(1)-QC(1)/CN(1),0.2*NSN, NPP,alpha_L,CN(1),QC(1),CN0(1),NSN/)
+        ! test_gpp = (/OutC(1),NPP_L,OutN(1),N_leaf,SNvcmax,exp(-kappaVcmax*(CN(1)-CN0(1))/CN0(1)),CN(1),QC(1),QN(1)/)
     !   endif
 !         if (itest .gt. 850)then
 !          iitest = iitest + 1
@@ -296,6 +298,7 @@ module mod_transfer
 ! ! write(*,*)"CN(1)",OutC(1),NPP_L,OutN(1), N_leaf,SNvcmax,exp(-kappaVcmax*(CN(1)-CN0(1))/CN0(1)),CN(1),QC(1),QN(1),N_deficit
 !         ! Write(*,*)"nppFIX: ",GrowthP,
 !         ! write(*,*)"NSN: ",NSN,N_fixation,N_demand,fnsc*Nfix0*NSC,fnsc,Nfix0,NSC,NSCmax,NSCmin
+        ! test_gpp = (/NSN,N_fixation,N_demand,fnsc*Nfix0*NSC,fnsc,Nfix0,NSC,NSCmax,NSCmin/)
 !         ENDIF
 !         ! if (NSN<0.00003)STOP
 !         endif

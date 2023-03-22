@@ -49,6 +49,7 @@ module mod_spinup
         sp_nLeaf_y(iloop)          = nLeaf_y
         sp_nStem_y(iloop)          = nStem_y
         sp_nRoot_y(iloop)          = nRoot_y
+        sp_nOther_y(iloop)         = nOther_y
         sp_nLitter_y(iloop)        = nLitter_y
         sp_nLitterCwd_y(iloop)     = nLitterCwd_y
         sp_nSoil_y(iloop)          = nSoil_y
@@ -64,6 +65,8 @@ module mod_spinup
         sp_mrro_y(iloop)           = mrro_y
         sp_mrros_y(iloop)          = mrros_y
         sp_mrrob_y(iloop)          = mrrob_y
+        sp_lai_y(iloop)            = lai_y
+        sp_test_y(iloop,:)         = test_gpp_y
     end subroutine update_spinup_values
 
     !-----------------------------------------------------------------------
@@ -98,6 +101,7 @@ module mod_spinup
         allocate(sp_nLeaf_y(nloops))
         allocate(sp_nStem_y(nloops))
         allocate(sp_nRoot_y(nloops))
+        allocate(sp_nOther_y(nloops))
         allocate(sp_nLitter_y(nloops))
         allocate(sp_nLitterCwd_y(nloops))
         allocate(sp_nSoil_y(nloops))
@@ -113,6 +117,8 @@ module mod_spinup
         allocate(sp_mrro_y(nloops))
         allocate(sp_mrros_y(nloops))
         allocate(sp_mrrob_y(nloops))
+        allocate(sp_lai_y(nloops))
+        allocate(sp_test_y(nloops,9))
     end subroutine init_spinup_variables
     
     !-----------------------------------------------------------------------
@@ -147,6 +153,7 @@ module mod_spinup
         deallocate(sp_nLeaf_y)
         deallocate(sp_nStem_y)
         deallocate(sp_nRoot_y)
+        deallocate(sp_nOther_y)
         deallocate(sp_nLitter_y)
         deallocate(sp_nLitterCwd_y)
         deallocate(sp_nSoil_y)
@@ -162,6 +169,8 @@ module mod_spinup
         deallocate(sp_mrro_y)
         deallocate(sp_mrros_y)
         deallocate(sp_mrrob_y)
+        deallocate(sp_lai_y)
+        deallocate(sp_test_y)
     end subroutine deallo_spinup_variables
 
     !-----------------------------------------------------------------------

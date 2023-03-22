@@ -33,7 +33,7 @@ module mod_soil
             WUPL(i)  = 0.0
             SRDT(i)  = 0.0
             DEPTH(i) = 0.0
-            ! if (i>3) wcl(i) = FLDCAP    ! Jian: set underground 30cm to saturated.
+            if (i>3) wcl(i) = FLDCAP    ! Jian: set underground 30cm to saturated.
         enddo
         ! Layer volume (cm3)
         DEPTH(1) = THKSL(1) ! Determine which layers are reached by the root system. 
@@ -70,34 +70,34 @@ module mod_soil
             INFILT = INFILT-WTADD       !update infilt
         ENDIF
         ! write(*,*)"TEST_WCL: ",WCL(1),thksl(1),WTADD,infilt,AMAX1((FLDCAP-wcl(1))*thksl(1)*10.0,0.0)
-        ! if (do_soilphy) then 
-        !     runoff= INFILT*0.005   !(infilt_rate = 0.0017 defined earlier by Yuan, changed  to 0.001 by shuang )
-        ! else
-        !     runoff=INFILT*0.001    ! Shuang added this elseif line! Shuang Modifed  Mar16 used to be 0.0019, the water lose too much lowest wt was >400
-        ! endif   
+        if (do_soilphy) then 
+            runoff= INFILT*0.005   !(infilt_rate = 0.0017 defined earlier by Yuan, changed  to 0.001 by shuang )
+        else
+            runoff=INFILT*0.001    ! Shuang added this elseif line! Shuang Modifed  Mar16 used to be 0.0019, the water lose too much lowest wt was >400
+        endif   
         ! Modified based on Ma et al.,2022
 
-        runoff = infilt*0.001
+        ! runoff = infilt*0.001
         infilt = infilt-runoff
 
         !----------------------------------------------------------------------------------------------------
-        ! if (transp .gt. 0.2 .and. transp .le. 0.22) then
-        !     infilt = infilt+transp*0.4
-        ! else if (transp .gt. 0.22) then
-        !     ! infilt = infilt+infilt*0.0165
-        !     infilt = infilt+transp*0.8
-        !     ! infilt = infilt+0.22*0.4+(transp-0.22)*0.9
-        ! else
-        !     infilt = infilt+transp*0.001
-        ! endif
+        if (transp .gt. 0.2 .and. transp .le. 0.22) then
+            infilt = infilt+transp*0.4
+        else if (transp .gt. 0.22) then
+            ! infilt = infilt+infilt*0.0165
+            infilt = infilt+transp*0.8
+            ! infilt = infilt+0.22*0.4+(transp-0.22)*0.9
+        else
+            infilt = infilt+transp*0.001
+        endif
 
-        ! if (evap .ge. 0.1 .and. evap .le. 0.15) then
-        !     infilt = infilt+evap*0.4
-        ! else if (evap .gt. 0.15) then
-        !     infilt = infilt+evap*0.8
-        ! else
-        !     infilt = infilt+evap*0.001
-        ! endif
+        if (evap .ge. 0.1 .and. evap .le. 0.15) then
+            infilt = infilt+evap*0.4
+        else if (evap .gt. 0.15) then
+            infilt = infilt+evap*0.8
+        else
+            infilt = infilt+evap*0.001
+        endif
         !----------------------------------------------------------------------------------------------------   
         ! water redistribution among soil layers
         do i=1,10
@@ -233,6 +233,34 @@ module mod_soil
         ! Jian: readd water according to evaporation, transpiration and soil moisture.
         infilt = infilt + amax1(0.0,(1-omega)*transp)
         infilt = infilt + amax1(0.0,(1-omega)*evap)
+
+        ! do i=4,10
+        !     wcl(i) = FLDCAP
+        ! enddo
+        ! IF(infilt.GE.0.0)THEN
+        !     ! Add water to this layer, pass extra water to the next.
+        !     WTADD  = AMIN1(INFILT,infilt_max,AMAX1((FLDCAP-wcl(1))*thksl(1)*10.0,0.0)) ! from cm to mm
+        !     WCL(1) = (WCL(1)*(thksl(1)*10.0)+WTADD)/(thksl(1)*10.0)
+        !     TWTADD = TWTADD+WTADD       !calculating total added water to soil layers (mm)
+        !     INFILT = INFILT-WTADD       !update infilt
+        ! ENDIF
+        ! supply = 0.0
+        ! demand = 0.0
+        ! test_a = 0.0
+        ! do i=1,9
+        !     if(omegaL(i).gt.0.3)then
+        !         supply    = wsc(i)*(omegaL(i)-0.3)   ! supply=wsc(i)*omegaL(i)
+        !         demand    = (FLDCAP-wcl(i+1))*THKSL(i+1)*10.0*(1.0-omegaL(i+1))
+        !         exchangeL = AMIN1(supply,demand)
+        !         wsc(i)    = wsc(i)- exchangeL
+        !         wsc(i+1)  = wsc(i+1)+ exchangeL
+        !         wcl(i)    = wsc(i)/(THKSL(i)*10.0)+WILTPT_x
+        !         wcl(i+1)  = wsc(i+1)/(THKSL(i+1)*10.0)+WILTPT_x
+        !         if (i .eq. 1)then
+        !             test_a = exchangeL
+        !         endif
+        !     endif
+        ! enddo
         
         do i=1,10
             wsc(i) = Amax1(0.00,(wcl(i)-WILTPT_x)*THKSL(i)*10.0)

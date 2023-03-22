@@ -7,33 +7,34 @@ module mod_data
     logical, parameter :: do_soilphy = .True.                      ! do soil physics
     logical, parameter :: do_matrix  = .True.                      ! do matrix run
     logical, parameter :: do_EBG     = .False.                     ! run EBG or not based on Ma et al., 2022
-    logical, parameter :: do_restart = .False.
+    logical, parameter :: do_restart = .True.
     logical, parameter :: do_ndep    = .False.
-    logical, parameter :: do_simu    = .False.
+    logical, parameter :: do_simu    = .True.
     logical, parameter :: do_leap    = .False.
     real,    parameter :: Ttreat     = 0.                          ! Temperature treatment, warming in air and soil temperature
-    real,    parameter :: CO2treat   = 280.                          ! CO2 treatmant, up to CO2treat, not add to Ca. CO2
+    real,    parameter :: CO2treat   = 0.                          ! CO2 treatmant, up to CO2treat, not add to Ca. CO2
     real,    parameter :: N_fert     = 0.                          ! 5.6 ! (11.2 gN m-2 yr-1, in spring, Duke Forest FACE)
     integer, parameter :: dtimes     = 24                          ! hourly simulation
 
     ! define some parameters for in/out
     character(200) :: parafile        = "../input/parameters.txt"
-    character(200) :: climatefile     = "../input/SPRUCE_forcing_plot07.txt"
+    character(200) :: climatefile     = "../input/SPRUCE_forcing_plot17.txt"    !"../input/forcing_1850-2014_new.txt"        !Forcing_in_TECO_2_1  SPRUCE_forcing_plot07
     character(200) :: snowdepthfile   = "../input/SPRUCE_Snow_Depth_2011-2014.txt"
-    character(len=1500) :: outdir     = "../outputs"
-    character(len=1500) :: in_restart = "../outputs/restart_spinup.nc"
+    character(len=1500) :: outdir     = "../outputs/simu_plot17"!outputs_1850-2014_new"   !"../outputs/outputs_test_1850-2014"       ! 
+    character(len=1500) :: in_restart = "../outputs/outputs_1850-2014_new/restart.nc"!"../outputs_old/outputs_spinup_plot7_new/restart.nc"! "../outputs/spinup_plot07/restart.nc"!
     character(len=50) watertablefile                               ! Jian: maybe used when not run soil_physical
     character(200) commts
     character(len=1000) :: outDir_h, outDir_d, outDir_m, outDir_csv, outFile_restart
     character(len=1000) :: outDir_sp, outFile_sp
-    real Simu_dailyflux14(14,1500000)                                ! output variables (Jian: need to modify according to CMIP6 for SPURCE-MIP) 
-    real Simu_dailyflux14_2023(28,1500000)                           ! Jian: Just used for testing Matrix-MIP
-    character(len=20) :: experiment = "control"                    ! for output based on SPRUCE-MIP form, such as "historical","control","w0-ambCO2","w2p25-ambCO2"..."w9-500CO2"
+    real Simu_dailyflux14(14,1500000)                              ! output variables (Jian: need to modify according to CMIP6 for SPURCE-MIP) 
+    real Simu_dailyflux14_2023(28,1500000)                         ! Jian: Just used for testing Matrix-MIP
+    character(len=20) :: experiment = "9degree_AmbCO2"                    ! for output based on SPRUCE-MIP form, such as "historical","control","w0-ambCO2","w2p25-ambCO2"..."w9-500CO2"
     
     ! parameters for spin-up
-    integer, parameter :: nloops     = 100                           ! the times to cycle all of forcing data for spin-up
+    integer, parameter :: nloops     = 10000                       ! the times to cycle all of forcing data for spin-up
     integer :: itest  ! add for testing
     integer :: iitest
+    real,DIMENSION(9) :: test_gpp, test_gpp_y
 
     ! parameters for running the loops
     integer nday4out, idayOfnyear, i_record, record_yr(10000), j   ! some variables for cycles
@@ -97,6 +98,7 @@ module mod_data
     ! add based on Ma et al., 2022
     real f, bubprob, Vmaxfraction
     ! end of read parameters --------------------------------
+    real, parameter:: times_storage_use=3*720.   ! 720 hours, 30 days
 
     ! contant parameters------------------------------------
     ! Sps is not assigned previous, something is wrong. -JJJJJJJJJJJJJJJJJJJJJ
@@ -193,7 +195,7 @@ module mod_data
     ! transfer C
     real QC(8),OutC(8),testout(11)  !  leaf,wood,root,fine lit.,coarse lit.,Micr,Slow,Pass
     real QN(8),CN0(8),CN(8),OutN(8),QNplant,QNminer
-    real N_uptake,N_leach,N_vol,N_fixation,N_deposit,N_loss,fNnetmin
+    real N_uptake,N_leach,N_vol,N_fixation,N_deposit,N_loss,fNnetmin,N_transfer
     real N_leaf,N_wood,N_root
     real N_LF,N_WF,N_RF
     
@@ -463,8 +465,12 @@ module mod_data
     real, dimension (:), allocatable :: all_wtd_h                                                             ! m, Water table depth
     real, dimension (:), allocatable :: all_snd_h                                                             ! m, Total snow depth
     real, dimension (:), allocatable :: all_lai_h 
-    real, dimension (:), allocatable :: all_gdd5_h                                                            ! m2 m-2, Leaf area index
-    
+    real, dimension (:), allocatable :: all_gdd5_h   
+    real, dimension (:), allocatable :: all_onset_h                                                         ! m2 m-2, Leaf area index
+    real, dimension (:), allocatable :: all_storage_h 
+    real, dimension (:), allocatable :: all_add_h 
+    real, dimension (:), allocatable :: all_accumulation_h 
+    real, dimension (:,:), allocatable :: all_test_h
 
     ! daily: 
     ! ---------------------------------------------------------------------
@@ -619,7 +625,7 @@ module mod_data
     ! Nitrogen fluxes (kgN m-2 s-1)
     real, dimension (:), allocatable :: sp_fBNF_y, sp_fN2O_y, sp_fNloss_y, sp_fNnetmin_y, sp_fNdep_y                   ! fBNF: biological nitrogen fixation; fN2O: loss of nitrogen through emission of N2O; fNloss:Total loss of nitrogen to the atmosphere and from leaching; net mineralizaiton and deposition of N
     ! Nitrogen pools (kgN m-2)
-    real, dimension (:), allocatable :: sp_nLeaf_y, sp_nStem_y, sp_nRoot_y
+    real, dimension (:), allocatable :: sp_nLeaf_y, sp_nStem_y, sp_nRoot_y, sp_nOther_y
     real, dimension (:), allocatable :: sp_nLitter_y, sp_nLitterCwd_y, sp_nSoil_y, sp_nMineral_y                    ! nMineral: Mineral nitrogen pool
     ! energy fluxes (W m-2)
     real, dimension (:), allocatable :: sp_hfls_y, sp_hfss_y                                                       ! Sensible heat flux; Latent heat flux; Net shortwave radiation; Net longwave radiation
@@ -627,7 +633,9 @@ module mod_data
     real, dimension (:), allocatable :: sp_ec_y, sp_tran_y, sp_es_y                                              ! Canopy evaporation; Canopy transpiration; Soil evaporation
     real, dimension (:), allocatable :: sp_hfsbl_y                                                         ! Snow sublimation
     real, dimension (:), allocatable :: sp_mrro_y, sp_mrros_y, sp_mrrob_y
-
+    real, dimension (:), allocatable :: sp_lai_y
+    ! test
+    real, dimension (:,:), allocatable :: sp_test_y
     integer i
 
     ! ==============================================================================================
@@ -637,12 +645,13 @@ module mod_data
         eJmx0          = Vcmax0*2.7                     ! @20C Leuning 1996 from Wullschleger (1993)
         QC             = (/300.,500.,250.,200.,300.,322.,28340.,23120./)!(/450.,380.,250.,119.,300.,322.,38340.,23120./)    !  leaf,wood,root,fine lit.,coarse lit.,Micr,Slow,Pass
         CN0            = (/50.,350.,60.,40.,300.,10.,20.,12./)
-        NSCmin         = 5.                                                 ! none structural carbon pool
+        NSCmin         = 1.                                                 ! none structural carbon pool
         Storage        = 60!32.09                                              ! g C/m2
         nsc            = 85.35
-        stor_use       = Storage/720.                                       ! 720 hours, 30 days
-        ! N_deposit      = 2.34/8760. ! Nitrogen input (gN/h/m2, )
-        N_deposit      = 0.153/8760.
+        stor_use       = Storage/times_storage_use                                       ! 720 hours, 30 days
+        N_deposit      = 2.34/8760. ! Nitrogen input (gN/h/m2, )
+        ! N_deposit      = 0.153/8760.
+        ! N_deposit      = 0.234/8760.
         ! the unit of residence time is transformed from yearly to hourly
         ! tauC           = (/tau_L,tau_W,tau_R,tau_F,tau_C,tau_Micr,tau_Slow,tau_Pass/)*8760. 
         TauC           = (/Tau_Leaf,Tau_Wood,Tau_Root,Tau_F,Tau_C,Tau_Micro,Tau_slowSOM,Tau_Passive/)*8760.
@@ -659,9 +668,9 @@ module mod_data
         bmplant        = bmstem+bmroot+bmleaf
         ! initial values of Nitrogen pools and C/N ratio
         alphaN         = 0.0    ! the transfer of N before littering
-        NSN            = 0.35!6.0 ! 0.35 according to Ma et al., 2022
+        NSN            = 0.35   ! 6.0 ! 0.35 according to Ma et al., 2022
         QNminer        = 1.2
-        N_deficit      = 0
+        N_deficit      = 0.
         CN             = CN0
         QN             = QC/CN0
         QNplant        = QN(1) + QN(2) + QN(3)
@@ -986,7 +995,7 @@ module mod_data
 
     subroutine init_year()
         implicit none
-        GDD5      = 0.0; 
+        ! GDD5      = 0.0; 
         ! onset     = 0;   
         ! phenoset  = 0; 
         !  diff_yr=0.0; gpp_yr=0.0
@@ -1007,9 +1016,9 @@ module mod_data
     end subroutine init_year
 
     subroutine init_update_year()
-        ! GDD5      = 0.0; 
-        onset     = 0;
-        phenoset  = 0;
+        GDD5      = 0.0 
+        onset     = 0
+        phenoset  = 0
         ! carbon fluxes (Kg C m-2 s-1)
         gpp_y            = 0.
         npp_y            = 0.
@@ -1078,6 +1087,7 @@ module mod_data
         wtd_y            = 0.                                                     ! m, Water table depth
         snd_y            = 0.                                                    ! m, Total snow depth
         lai_y            = 0.                                                    ! m2 m-2, Leaf area index
+        test_gpp_y       = (/0.,0.,0.,0.,0.,0.,0.,0.,0./)
     end subroutine init_update_year
 
     subroutine assign_all_results(hours, days, months, years)
@@ -1150,7 +1160,12 @@ module mod_data
         allocate(all_wtd_h(hours))                                                             ! m, Water table depth
         allocate(all_snd_h(hours))                                                             ! m, Total snow depth
         allocate(all_lai_h(hours))  
-        allocate(all_gdd5_h(hours))                                                           ! m2 m-2, Leaf area index
+        allocate(all_gdd5_h(hours))
+        allocate(all_onset_h(hours))  
+        allocate(all_storage_h(hours))
+        allocate(all_add_h(hours)) 
+        allocate(all_accumulation_h(hours))
+        allocate(all_test_h(hours,9))                                                        ! m2 m-2, Leaf area index
 
         ! daily: 
         ! ---------------------------------------------------------------------
@@ -1363,7 +1378,12 @@ module mod_data
         deallocate(all_wtd_h)                                                             ! m, Water table depth
         deallocate(all_snd_h)                                                             ! m, Total snow depth
         deallocate(all_lai_h)       
-        deallocate(all_gdd5_h)                                                      ! m2 m-2, Leaf area index
+        deallocate(all_gdd5_h)
+        deallocate(all_onset_h) 
+        deallocate(all_storage_h)
+        deallocate(all_add_h) 
+        deallocate(all_accumulation_h)  
+        deallocate(all_test_h)                                                  ! m2 m-2, Leaf area index
 
         ! daily: 
         ! ---------------------------------------------------------------------
